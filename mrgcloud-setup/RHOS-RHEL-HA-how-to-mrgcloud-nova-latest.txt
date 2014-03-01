@@ -1,0 +1,79 @@
+rhos4-nova1|rhos4-nova2:
+
+yum   install -y openstack-nova-console openstack-nova-novncproxy   openstack-utils openstack-nova-api openstack-nova-conductor   openstack-nova-scheduler python-cinderclient python-memcached
+
+openstack-config --set /etc/nova/nova.conf DEFAULT memcached_servers rhos4-memcache1:11211,rhos4-memcache2:11211
+openstack-config  --set /etc/nova/nova.conf DEFAULT vncserver_proxyclient_address $(ip  addr show dev eth1 scope global | grep inet | sed -e 's#.*inet ##g' -e  's#/.*##g')
+openstack-config --set /etc/nova/nova.conf DEFAULT vncserver_listen 0.0.0.0
+openstack-config --set /etc/nova/nova.conf DEFAULT novncproxy_base_url http://mrg-01.mpc.lab.eng.bos.redhat.com:6080/vnc_auto.html
+openstack-config --set /etc/nova/nova.conf DEFAULT sql_connection mysql://nova:novatest@vip-mysql/nova
+openstack-config --set /etc/nova/nova.conf DEFAULT auth_strategy keystone
+openstack-config --set /etc/nova/nova.conf DEFAULT rpc_backend nova.openstack.common.rpc.impl_qpid
+openstack-config --set /etc/nova/nova.conf DEFAULT qpid_hostname vip-qpid
+openstack-config --set /etc/nova/nova.conf DEFAULT qpid_heartbeat 2
+openstack-config --set /etc/nova/nova.conf DEFAULT metadata_host vip-nova
+openstack-config --set /etc/nova/nova.conf DEFAULT metadata_listen 0.0.0.0
+openstack-config --set /etc/nova/nova.conf DEFAULT metadata_listen_port 8775
+openstack-config --set /etc/nova/nova.conf DEFAULT service_neutron_metadata_proxy True
+openstack-config --set /etc/nova/nova.conf DEFAULT neutron_metadata_proxy_shared_secret metatest
+openstack-config --set /etc/nova/nova.conf DEFAULT glance_host vip-glance
+openstack-config --set /etc/nova/nova.conf DEFAULT network_api_class nova.network.neutronv2.api.API
+openstack-config --set /etc/nova/nova.conf DEFAULT neutron_url http://vip-neutron:9696/
+openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_tenant_name services
+openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_username neutron
+openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_password neutrontest
+openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_auth_url http://vip-keystone:35357/v2.0
+openstack-config --set /etc/nova/nova.conf DEFAULT firewall_driver nova.virt.firewall.NoopFirewallDriver
+openstack-config --set /etc/nova/nova.conf DEFAULT libvirt_vif_driver nova.virt.libvirt.vif.LibvirtHybridOVSBridgeDriver
+
+openstack-config --set /etc/nova/api-paste.ini filter:authtoken auth_host vip-keystone
+openstack-config --set /etc/nova/api-paste.ini filter:authtoken admin_tenant_name services
+openstack-config --set /etc/nova/api-paste.ini filter:authtoken admin_user compute
+openstack-config --set /etc/nova/api-paste.ini filter:authtoken admin_password novatest
+
+rhos4-nova1
+
+. /srv/rhos/configs/keystonerc_admin
+keystone user-create --name compute --pass novatest
+keystone user-role-add --user compute --role admin --tenant services
+keystone service-create --name compute --type compute --description "OpenStack Compute Service"
+keystone endpoint-create  --service compute --publicurl "http://vip-nova:8774/v2/\$(tenant_id)s" --adminurl "http://vip-nova:8774/v2/\$(tenant_id)s" --internalurl "http://vip-nova:8774/v2/\$(tenant_id)s"
+
+mysql --user=root --password=mysqltest --host=vip-mysql
+CREATE DATABASE nova;
+GRANT ALL ON nova.* TO 'nova'@'%' IDENTIFIED BY 'novatest';
+FLUSH PRIVILEGES;
+quit
+su nova -s /bin/sh -c "nova-manage db sync"
+
+rhos4-nova1|rhos4-nova2
+
+chkconfig pacemaker on
+pcs cluster setup --name rhos4-nova rhos4-nova1 rhos4-nova2
+pcs cluster start
+
+sleep 30
+
+pcs stonith create nova1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos4-nova1
+
+pcs stonith create nova2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos4-nova2
+
+pcs resource create nova-consoleauth lsb:openstack-nova-consoleauth --clone
+pcs resource create nova-novncproxy lsb:openstack-nova-novncproxy --clone
+pcs resource create nova-api lsb:openstack-nova-api --clone
+pcs resource create nova-scheduler lsb:openstack-nova-scheduler
+pcs resource create nova-conductor lsb:openstack-nova-conductor --clone
+
+pcs constraint order start nova-consoleauth-clone then nova-novncproxy-clone
+pcs constraint colocation add nova-novncproxy with nova-consoleauth
+pcs constraint order start nova-novncproxy-clone then nova-api-clone
+pcs constraint colocation add nova-api with nova-novncproxy
+pcs constraint order start nova-api-clone then nova-scheduler
+pcs constraint colocation add nova-scheduler with nova-api
+pcs constraint order start nova-scheduler then nova-conductor-clone
+
+# TEST
+. /srv/rhos/configs/keystonerc_admin
+nova usage
+nova usage-list
+

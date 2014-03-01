@@ -1,0 +1,69 @@
+rhos4-mongodb1|rhos4-mongodb2|rhos4-mongodb3|rhos4-mongodb4 (WIP):
+
+yum install -y mongodb-server
+
+sed -i -e 's#bind_ip.*#bind_ip = 0.0.0.0#g'  /etc/mongodb.conf
+echo "replSet = ceilometer" >> /etc/mongodb.conf 
+
+chkconfig pacemaker on
+pcs cluster setup --name rhos4-mongodb rhos4-mongodb1 rhos4-mongodb2 rhos4-mongodb3 rhos4-mongodb4
+pcs cluster start
+
+sleep 30
+
+pcs stonith create mongodb1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos4-mongodb1
+
+pcs stonith create mongodb2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos4-mongodb2
+
+pcs stonith create mongodb3-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos4-mongodb3
+
+pcs stonith create mongodb4-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos4-mongodb4
+
+pcs resource create mongodb lsb:mongod --clone
+
+# required for all db to fill up their journals
+sleep 600
+
+# THE REAL FFS WORKAROUND TO BROKEN INIT SCRIPT
+pcs resource cleanup mongodb
+
+# Setup replica
+rhos4-mongodb1:
+
+cat > /root/mongo_replica_setup.js << EOF
+rs.initiate()
+sleep(10000)
+rs.add("rhos4-mongodb1.vmnet.mpc.lab.eng.bos.redhat.com");
+rs.add("rhos4-mongodb2.vmnet.mpc.lab.eng.bos.redhat.com");
+rs.add("rhos4-mongodb3.vmnet.mpc.lab.eng.bos.redhat.com");
+rs.add("rhos4-mongodb4.vmnet.mpc.lab.eng.bos.redhat.com");
+EOF
+
+rm -f /root/mongo_replica_setup.js
+mongo /root/mongo_replica_setup.js
+
+# Allow for primary election and sync of replica set
+sleep 60
+
+rm -f /root/mongo_replica_setup.js
+
+# USEFUL INFO:
+10:43 < eglynn> fabbione: stray 't' there in ?replicaSet=foobar ... I meant such as "connection = mongodb://localhost:27017/ceilometer?replicaSet=rs0" in the ceilometer.conf
+
+
+Note that the mongo URL host(s) only need to be alive and contactable when the client starts up. At that point, the client will transparently discover all the other replicas in the set. If the original primary dies, the client will have sufficient information to failover writes to the newly elected primary.
+
+So IIUC in the active-active case, only a subset of the replicaSet hosts need to be under the sway of the load balancer. We must only ensure that the client-side URL contains a sufficient for redundancy, but not neccessarily complete, enumeration of the mongo hosts.
+
+In fact one potential set-up would involve deploying a set of mongodb arbiters behind the load balancer, while leaving the primary and secondary nodes as stand-alone services with directing addressing. (An arbiter is simply a lightweight mongo node with awareness of the replicaSet state and a vote in primary elections, but no capability to store data).Newly connecting clients would be load balanced between the arbiters in the first instance, and then redirect themselves to the actual primary for write operations, or a secondary for reads. So the arbiters would act effectively as a discovery service.
+
+So the explicit client-side config would only include the LB'd address for the arbiters, e.g.:
+
+  connection = mongodb://arbiter-virtual-ip:port/ceilometer?replicaSet=rs0
+
+Using direct addressing for the primary and secondaries seems clearer in terms of ensuring that writes are directed at the primary from the get-go and that we get a fair distribution of reads over the secondaries (without the loadbalancer getting the way).
+
+Note that an arbiter may be added to the replicaSet via the following shell command executed on the primary:
+
+  > rs.addArb("arbiter-actual-ip1:port")
+

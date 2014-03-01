@@ -1,0 +1,76 @@
+rhos4-heat1|rhos4-heat2:
+
+yum install -y openstack-heat-* python-heatclient openstack-utils MySQL-python
+
+https://bugzilla.redhat.com/show_bug.cgi?id=1048035
+
+openstack-config --set /etc/heat/heat.conf DEFAULT sql_connection mysql://heat:heattest@vip-mysql/heat
+openstack-config --set /etc/heat/heat.conf keystone_authtoken admin_tenant_name services
+openstack-config --set /etc/heat/heat.conf keystone_authtoken admin_user heat
+openstack-config --set /etc/heat/heat.conf keystone_authtoken admin_password heattest
+openstack-config --set /etc/heat/heat.conf keystone_authtoken service_host vip-keystone
+openstack-config --set /etc/heat/heat.conf keystone_authtoken auth_host vip-keystone
+openstack-config --set /etc/heat/heat.conf keystone_authtoken auth_uri http://vip-keystone:35357/v2.0
+openstack-config --set /etc/heat/heat.conf keystone_authtoken keystone_ec2_uri http://vip-keystone:35357/v2.0
+openstack-config --set /etc/heat/heat.conf DEFAULT heat_metadata_server_url vip-heat:8000
+openstack-config --set /etc/heat/heat.conf DEFAULT heat_waitcondition_server_url vip-heat:8000/v1/waitcondition
+openstack-config --set /etc/heat/heat.conf DEFAULT heat_watch_server_url vip-heat:8003
+openstack-config --set /etc/heat/heat.conf DEFAULT qpid_hostname vip-qpid
+openstack-config --set /etc/heat/heat.conf DEFAULT qpid_heartbeat 2
+
+. /srv/rhos/configs/keystonerc_admin
+keystone user-create --name=heat --pass=heattest
+keystone user-role-add --user heat --role admin --tenant services
+keystone service-create --name heat --type orchestration
+keystone endpoint-create --service heat --publicurl "http://vip-heat:8004/v1/%(tenant_id)s" --adminurl "http://vip-heat:8004/v1/%(tenant_id)s" --internalurl "http://vip-heat:8004/v1/%(tenant_id)s"
+keystone service-create --name heat-cfn --type cloudformation
+keystone endpoint-create --service heat --publicurl "http://vip-heat:8000/v1" --adminurl "http://vip-heat:8000/v1" --internalurl "http://vip-heat:8000/v1"
+
+mysql --user=root --password=mysqltest --host=vip-mysql
+CREATE DATABASE heat;
+GRANT ALL ON heat.* TO 'heat'@'%' IDENTIFIED BY 'heattest';
+FLUSH PRIVILEGES;
+quit
+
+su heat -s /bin/sh -c "heat-manage db_sync"
+
+chkconfig pacemaker on
+pcs cluster setup --name rhos4-heat rhos4-heat1 rhos4-heat2
+pcs cluster start
+
+sleep 30
+
+pcs stonith create heat1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos4-heat1
+
+pcs stonith create heat2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos4-heat2
+
+pcs resource create heat-api lsb:openstack-heat-api --clone
+pcs resource create heat-api-cfn lsb:openstack-heat-api-cfn --clone
+pcs resource create heat-api-cloudwatch lsb:openstack-heat-api-cloudwatch --clone
+pcs resource create heat-engine lsb:openstack-heat-engine
+
+pcs constraint order start heat-api-clone then heat-api-cfn-clone
+pcs constraint colocation add heat-api-cfn with heat-api
+pcs constraint order start heat-api-cfn-clone then heat-api-cloudwatch-clone
+pcs constraint colocation add heat-api-cloudwatch with heat-api-cfn
+pcs constraint order start heat-api-cloudwatch-clone then heat-engine
+pcs constraint colocation add heat-engine with heat-api-cloudwatch
+
+# TEST:
+
+. /srv/rhos/configs/keystonerc_admin
+nova keypair-add --pub_key ~/.ssh/authorized_keys heat-userkey-test
+
+glance image-create --name F17-x86_64-cfntools --disk-format qcow2 --container-format bare --is-public True --copy-from http://fedorapeople.org/groups/heat/prebuilt-jeos-images/F17-x86_64-cfntools.qcow2
+
+wget https://raw.github.com/openstack/heat-templates/master/hot/servers_in_existing_neutron_net.yaml
+
+publicnetid=$(neutron net-list |grep public_lan | awk '{print $2}')
+privatenetid=$(neutron net-list |grep internal_lan | awk '{print $2}')
+privatesubnetid=$(neutron subnet-list |grep internal_subnet|awk '{print $2}')
+
+heat  stack-create testtest   --template-file=servers_in_existing_neutron_net.yaml   --parameters="key_name=heat-userkey-test;image=F17-x86_64-cfntools;flavor=m1.large;public_net_id=$publicnetid;private_net_id=$privatenetid;private_subnet_id=$privatesubnetid"
+
+testtestid=$(heat stack-list | grep testtest | awk '{print $2}')
+heat stack-delete $testtestid
+

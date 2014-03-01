@@ -1,0 +1,64 @@
+rhos4-ceilometer1|rhos4-ceilometer2:
+
+yum install -y openstack-ceilometer-api openstack-ceilometer-central openstack-ceilometer-collector openstack-ceilometer-common openstack-ceilometer-alarm python-ceilometer python-ceilometerclient
+
+openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken auth_host vip-keystone
+openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken auth_port 35357
+openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken auth_protocol http
+openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken admin_tenant_name services
+openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken admin_user ceilometer
+openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken admin_password ceilometertest
+openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken memcached_servers rhos4-memcache1:11211,rhos4-memcache2:11211
+
+openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT qpid_hostname vip-qpid
+openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT qpid_heartbeat 2
+
+openstack-config --set /etc/ceilometer/ceilometer.conf publisher_rpc metering_secret ceilometersecret
+openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT os_auth_url http://vip-keystone:35357/v2.0
+openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT os_username ceilometer
+openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT os_tenant_name services
+openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT os_password ceilometertest
+
+# openstack-config --set /etc/ceilometer/ceilometer.conf database connection mongodb://vip-mongo:27017/ceilometer?replicaSet=ceilometer
+
+openstack-config --set  /etc/ceilometer/ceilometer.conf database connection  mongodb://rhos4-mongodb1,rhos4-mongodb2,rhos4-mongodb3,rhos4-mongodb4:27017/ceilometer?replicaSet=ceilometer
+
+rhos4-ceilometer1:
+
+. /srv/rhos/configs/keystonerc_admin
+keystone user-create --name ceilometer --pass ceilometertest --email fdinitto@redhat.com
+keystone user-role-add --user ceilometer --role admin --tenant services
+keystone role-create --name ResellerAdmin
+keystone user-role-add --user ceilometer --role ResellerAdmin --tenant services
+keystone service-create --name ceilometer --type metering --description="OpenStack Telemetry Service"
+keystone endpoint-create --service ceilometer --publicurl "http://vip-ceilometer:8777" --adminurl "http://vip-ceilometer:8777" --internalurl "http://vip-ceilometer:8777"
+
+rhos4-ceilometer1|rhos4-ceilometer2:
+
+chkconfig pacemaker on
+pcs cluster setup --name rhos4-ceilom rhos4-ceilometer1 rhos4-ceilometer2
+pcs cluster start
+
+sleep 30
+
+pcs stonith create ceilometer1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos4-ceilometer1
+
+pcs stonith create ceilometer2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos4-ceilometer2
+
+pcs resource create ceilometer-central lsb:openstack-ceilometer-central 
+pcs resource create ceilometer-collector lsb:openstack-ceilometer-collector --clone
+pcs resource create ceilometer-api lsb:openstack-ceilometer-api --clone
+pcs resource create ceilometer-delay Delay startdelay=10 --clone
+pcs resource create ceilometer-alarm-evaluator lsb:openstack-ceilometer-alarm-evaluator --clone
+pcs resource create ceilometer-alarm-notifier lsb:openstack-ceilometer-alarm-notifier --clone
+
+pcs constraint order start ceilometer-central then ceilometer-collector-clone
+pcs constraint order start ceilometer-collector-clone then ceilometer-api-clone
+pcs constraint order start ceilometer-api-clone then ceilometer-delay-clone
+pcs constraint order start ceilometer-delay-clone then ceilometer-alarm-evaluator-clone
+pcs constraint order start ceilometer-alarm-evaluator-clone then ceilometer-alarm-notifier-clone
+
+# TEST
+. /srv/rhos/configs/keystonerc_admin
+for m in storage.objects image network volume instance ; do ceilometer sample-list -m $m | tail -2 ; done
+

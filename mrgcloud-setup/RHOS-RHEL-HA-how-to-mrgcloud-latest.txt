@@ -1,0 +1,84 @@
+Baremetal nodes setup:
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-baremetal
+
+rhos4-lb1|rhos4-lb2:
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-lb
+
+rhos4-mysql1|rhos4-mysql2:
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-mysql
+
+rhos4-qpid1|rhos4-qpid2:
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-qpid
+
+rhos4-keystone1|rhos4-keystone2:
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-keystone
+
+rhos4-memcache1|rhos4-memcache2:
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-memcache
+
+rhos4-glance1|rhos4-glance2:
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-glance
+
+rhos4-cinder1|rhos4-cinder2:
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-cinder
+
+rhos4-swift-brickX (brick nodes, single node clusters)
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-swift-brick
+
+rhos4-swift1|rhos4-swift2
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-swift
+
+rhos4-neutron1|rhos4-neutron2:
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-neutron
+
+rhos4-neutron-n1|rhos4-neutron-n2:
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-neutron-n
+
+rhos4-nova1|rhos4-nova2:
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-nova
+
+rhos4-horizon1|rhos4-horizon2:
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-horizon
+
+rhos4-heat1|rhos4-heat2:
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-heat
+
+rhos4-mongodb1|rhos4-mongodb2|rhos4-mongodb3|rhos4-mongodb4:
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-mongodb
+
+rhos4-ceilometer1|rhos4-ceilometer2:
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-ceilometer
+
+compute nodes (single node clusters)
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-computenodes
+
+RANDOM NOTES FOLLOW:
+
+# TODO:
+neutron debugging:
+in progress by Ajo
+rabbitmq testing:
+use rohara how to
+mysql check for all services:
+openstack-config --set /etc/cinder/cinder.conf DEFAULT max_retries -1
+openstack-config --set /etc/cinder/cinder.conf DEFAULT retry_interval 1
+timers for A/P services:
+op monitor interval...
+LB in active/active:
+use keepalived for VRRP and execute scripts to move hash around
+mariadb replacement:
+pending Ryan
+nagios (low)
+docs
+
+crm_report <- DEBUG HERE
+
+XXXX FRAME XXXX
+packages
+config
+keystone
+db
+cluster
+XXXXXXXXXXXXXXXX
+
+

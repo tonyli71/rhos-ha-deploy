@@ -1,0 +1,53 @@
+rhos4-swift-brick1|rhos4-swift-brick2|rhos4-swift-brick3|rhos4-swift-brick4
+
+# NOTE xfsprogs requires scalablefs enabled on rhel6.5
+yum install -y openstack-swift-object openstack-swift-container openstack-swift-account openstack-utils rsync xfsprogs xinetd
+
+chkconfig rsync on
+
+mkfs.xfs /dev/vdb
+
+mkdir -p /localswiftstorage/vdb
+mkdir -p /tmp/keystone-signing-swift
+
+openstack-config --set /etc/swift/object-server.conf DEFAULT bind_ip 0.0.0.0
+openstack-config --set /etc/swift/object-server.conf DEFAULT devices /localswiftstorage
+openstack-config --set /etc/swift/account-server.conf DEFAULT bind_ip 0.0.0.0
+openstack-config --set /etc/swift/account-server.conf DEFAULT devices /localswiftstorage
+openstack-config --set /etc/swift/container-server.conf DEFAULT bind_ip 0.0.0.0
+openstack-config --set /etc/swift/container-server.conf DEFAULT devices /localswiftstorage
+
+chown -R root:swift /etc/swift
+chown -R swift:swift /tmp/keystone-signing-swift
+
+#try to keep the clustername below 15 chars
+clustername=$(echo $(hostname -s) | sed -e 's#rhos4-##g')
+
+chkconfig pacemaker on
+pcs cluster setup --name $clustername $(hostname -s)
+pcs cluster start
+
+sleep 30
+
+#local HACK! odd numbers are running on mrg-07 (225.0.0.7) even on 08 (225.0.0.8)
+bricknum=$(echo $(hostname -s) | sed -e 's#rhos4-swift-brick##g')
+mcast=225.0.0.$((8 - (bricknum % 2)))
+
+pcs stonith create swift-fence fence_xvm multicast_address=$mcast pcmk_host_list=$(hostname -s)
+
+pcs resource create swift-fs Filesystem device="/dev/vdb" directory="/localswiftstorage/vdb" fstype="xfs"
+
+sleep 5
+
+chown -R swift:swift /localswiftstorage
+
+pcs resource create xinetd lsb:xinetd
+pcs resource create swift-account lsb:openstack-swift-account
+pcs resource create swift-container lsb:openstack-swift-container
+pcs resource create swift-object lsb:openstack-swift-object
+
+pcs constraint order start swift-fs then xinetd
+pcs constraint order start xinetd then swift-account
+pcs constraint order start swift-account then swift-container
+pcs constraint order start swift-container then swift-object
+

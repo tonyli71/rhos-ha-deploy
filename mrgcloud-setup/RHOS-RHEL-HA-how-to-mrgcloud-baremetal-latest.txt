@@ -1,0 +1,745 @@
+mrg-01|02|03|04|07|08
+
+public visible ip addresses:
+mrg-vip76.mpc.lab.eng.bos.redhat.com
+mrg-vip77.mpc.lab.eng.bos.redhat.com
+mrg-vip78.mpc.lab.eng.bos.redhat.com
+mrg-vip79.mpc.lab.eng.bos.redhat.com
+mrg-vip80.mpc.lab.eng.bos.redhat.com
+mrg-vip81.mpc.lab.eng.bos.redhat.com
+
+^^^allocated to neutron
+
+mrg-vip82.mpc.lab.eng.bos.redhat.com
+mrg-vip83.mpc.lab.eng.bos.redhat.com
+
+^^^currently free, might have to assign them to neutron-n1 and neutron-n2
+
+cat > /etc/yum.repos.d/custom.repo << EOF
+[rhel6.5]
+enabled = 1
+name = rhel6.5
+baseurl = http://download.devel.redhat.com/brewroot/repos/RHEL-6.5-build/latest/\$basearch
+gpgcheck = 0
+
+[rhel6.5.z]
+enabled = 1
+name = rhel6.5.z
+baseurl = http://download.devel.redhat.com/brewroot/repos/RHEL-6.5-Z-build/latest/\$basearch
+gpgcheck = 0
+
+[RHOS-4.0]
+name=RHOS-4.0
+baseurl=http://download.lab.bos.redhat.com/rel-eng/OpenStack/4.0/latest/RHOS-4.0/\$basearch/os
+gpgcheck=0
+enabled=1
+
+[mrg-2.3]
+name=Red Hat MRG 2.3
+baseurl=http://download.devel.redhat.com/released/RHEL-6-MRG/2.3/\$basearch/MRG/
+enabled=1
+gpgcheck=0
+EOF
+
+yum clean all
+yum update -y
+
+yum install -y pacemaker fence-agents resource-agents pcs cman ccs libvirt qemu-kvm
+sed -i -e 's/=enforcing/=disabled/g' /etc/sysconfig/selinux
+sed -i -e 's/=enforcing/=disabled/g' /etc/selinux/config
+sed -i -e 's/^0/#0/g' /etc/cron.d/rhn-virtualization.cron
+chkconfig acpid off
+chkconfig iptables off
+chkconfig ip6tables off
+service libvirtd start
+virsh net-destroy default
+virsh net-undefine default
+
+lastoct="$(hostname -s | sed -e 's#mrg-0##g')"
+
+cat > /etc/sysconfig/network-scripts/ifcfg-ext0 << EOF
+DEVICE=ext0
+TYPE=Bridge
+BOOTPROTO=dhcp
+ONBOOT=yes
+IPV6INIT=yes
+IPV6_AUTOCONF=yes
+EOF
+
+
+cat > /etc/sysconfig/network-scripts/ifcfg-vmnet0 << EOF
+DEVICE=vmnet0
+TYPE=Bridge
+BOOTPROTO=static
+ONBOOT=yes
+IPV6INIT=yes
+IPV6_AUTOCONF=yes
+IPADDR=192.168.16.$lastoct
+NETMASK=255.255.255.0
+NETWORK=192.168.16.0
+EOF
+
+if [ -e /sys/class/net/eth0 ]; then
+
+cat > /etc/sysconfig/network-scripts/ifcfg-eth0 << EOF
+DEVICE=eth0
+BOOTPROTO=none
+ONBOOT=yes
+BRIDGE=ext0
+EOF
+
+cat > /etc/sysconfig/network-scripts/ifcfg-eth1 << EOF
+DEVICE=eth1
+BOOTPROTO=none
+ONBOOT=yes
+BRIDGE=vmnet0
+EOF
+
+else
+
+cat > /etc/sysconfig/network-scripts/ifcfg-em1 << EOF
+DEVICE=em1
+BOOTPROTO=none
+ONBOOT=yes
+BRIDGE=ext0
+EOF
+
+cat > /etc/sysconfig/network-scripts/ifcfg-em2 << EOF
+DEVICE=em2
+BOOTPROTO=none
+ONBOOT=yes
+BRIDGE=vmnet0
+EOF
+
+fi
+
+echo "echo 1 > /sys/class/net/ext0/bridge/multicast_querier" >> /etc/rc.local
+echo "echo 1 > /sys/class/net/vmnet0/bridge/multicast_querier" >> /etc/rc.local
+/etc/rc.local
+
+service libvirtd start
+virsh net-destroy default
+
+umount /home
+sed -i -e 's#.*home.*##g' /etc/fstab 
+lvremove -f /dev/mapper/*home
+lvresize -f -l+100%FREE /dev/mapper/*root
+resize2fs /dev/mapper/*root
+
+sed -i -e 's#ip_forward.*#ip_forward = 1#g' /etc/sysctl.conf
+
+reboot
+
+mrg-01 bind/dhcp/nfs-server/haproxy for virtnet0
+
+service iptables stop
+iptables -t nat -A POSTROUTING -s 192.168.16.0/24 -o ext0 -j SNAT --to-source 10.16.144.34
+service iptables save
+chkconfig iptables on
+service iptables start
+
+yum install -y bind dhcp haproxy
+
+chkconfig haproxy on
+
+cat > /etc/haproxy/haproxy.cfg << EOF
+global
+    daemon
+
+defaults
+    mode tcp
+    maxconn 10000
+    timeout connect 90s
+    timeout client 90s
+    timeout server 90s
+
+frontend vip-horizon-ext
+    bind 10.16.144.34:80
+    default_backend vip-horizon-int
+
+backend vip-horizon-int
+    balance roundrobin
+    server vip-horizon 192.168.16.208:80 check inter 10s
+EOF
+
+service haproxy start
+
+sed -i -e 's#127.0.0.1#any#g' -e 's#::1#any#g' -e 's#allow-query#//allow-query#g' /etc/named.conf 
+
+sed  -i -e 's#recursion yes;#recursion yes;\n\n\tforwarders  {\n\t\t10.16.36.29;\n\t\t10.11.5.19;\n\t\t10.5.30.160;\n\t};\n#g'  /etc/named.conf 
+
+sed -i -e 's#dnssec-enable yes;#dnssec-enable no;#g' -e 's#dnssec-validation yes;#dnssec-validation no;#g' /etc/named.conf 
+
+echo 'include "/etc/named/lab.zones";' >> /etc/named.conf
+
+cat > /etc/named/lab.zones << EOF
+zone "vmnet.mpc.lab.eng.bos.redhat.com" {
+        type master;
+        file "/etc/named/vmnet.mpc.lab.eng.bos.redhat.com";
+};
+
+zone "16.168.192.in-addr.arpa" {
+        type master;
+        file "/etc/named/192.168.16.arpa";
+};
+EOF
+
+cat > /etc/named/192.168.16.arpa << EOF
+$TTL    86400
+@       IN      SOA     mrg-01. fdinitto.redhat.com.  (
+                                      2014021801 ; Serial
+                                      21600      ; Refresh
+                                      10800      ; Retry
+                                      1209600    ; Expire
+                                      3600 )     ; Minimum
+              IN      NS      mrg-01.
+
+1       IN      PTR     mrg-01.vmnet.mpc.lab.eng.bos.redhat.com.
+2       IN      PTR     mrg-02.vmnet.mpc.lab.eng.bos.redhat.com.
+3       IN      PTR     mrg-03.vmnet.mpc.lab.eng.bos.redhat.com.
+4       IN      PTR     mrg-04.vmnet.mpc.lab.eng.bos.redhat.com.
+5       IN      PTR     mrg-05.vmnet.mpc.lab.eng.bos.redhat.com.
+6       IN      PTR     mrg-06.vmnet.mpc.lab.eng.bos.redhat.com.
+7       IN      PTR     mrg-07.vmnet.mpc.lab.eng.bos.redhat.com.
+8       IN      PTR     mrg-08.vmnet.mpc.lab.eng.bos.redhat.com.
+9       IN      PTR     mrg-09.vmnet.mpc.lab.eng.bos.redhat.com.
+10      IN      PTR     rhos4-base.vmnet.mpc.lab.eng.bos.redhat.com.
+11      IN      PTR     rhos4-lb1.vmnet.mpc.lab.eng.bos.redhat.com.
+12      IN      PTR     rhos4-lb2.vmnet.mpc.lab.eng.bos.redhat.com.
+13      IN      PTR     rhos4-mysql1.vmnet.mpc.lab.eng.bos.redhat.com.
+14      IN      PTR     rhos4-mysql2.vmnet.mpc.lab.eng.bos.redhat.com.
+15      IN      PTR     rhos4-qpid1.vmnet.mpc.lab.eng.bos.redhat.com.
+16      IN      PTR     rhos4-qpid2.vmnet.mpc.lab.eng.bos.redhat.com.
+17      IN      PTR     rhos4-keystone1.vmnet.mpc.lab.eng.bos.redhat.com.
+18      IN      PTR     rhos4-keystone2.vmnet.mpc.lab.eng.bos.redhat.com.
+19      IN      PTR     rhos4-memcache1.vmnet.mpc.lab.eng.bos.redhat.com.
+20      IN      PTR     rhos4-memcache2.vmnet.mpc.lab.eng.bos.redhat.com.
+21      IN      PTR     rhos4-glance1.vmnet.mpc.lab.eng.bos.redhat.com.
+22      IN      PTR     rhos4-glance2.vmnet.mpc.lab.eng.bos.redhat.com.
+23      IN      PTR     rhos4-cinder1.vmnet.mpc.lab.eng.bos.redhat.com.
+24      IN      PTR     rhos4-cinder2.vmnet.mpc.lab.eng.bos.redhat.com.
+25      IN      PTR     rhos4-swift1.vmnet.mpc.lab.eng.bos.redhat.com.
+26      IN      PTR     rhos4-swift2.vmnet.mpc.lab.eng.bos.redhat.com.
+27      IN      PTR     rhos4-swift-ac1.vmnet.mpc.lab.eng.bos.redhat.com.
+28      IN      PTR     rhos4-swift-ac2.vmnet.mpc.lab.eng.bos.redhat.com.
+29      IN      PTR     rhos4-neutron1.vmnet.mpc.lab.eng.bos.redhat.com.
+30      IN      PTR     rhos4-neutron2.vmnet.mpc.lab.eng.bos.redhat.com.
+31      IN      PTR     rhos4-neutron-n1.vmnet.mpc.lab.eng.bos.redhat.com.
+32      IN      PTR     rhos4-neutron-n2.vmnet.mpc.lab.eng.bos.redhat.com.
+33      IN      PTR     rhos4-nova1.vmnet.mpc.lab.eng.bos.redhat.com.
+34      IN      PTR     rhos4-nova2.vmnet.mpc.lab.eng.bos.redhat.com.
+35      IN      PTR     rhos4-horizon1.vmnet.mpc.lab.eng.bos.redhat.com.
+36      IN      PTR     rhos4-horizon2.vmnet.mpc.lab.eng.bos.redhat.com.
+37      IN      PTR     rhos4-heat1.vmnet.mpc.lab.eng.bos.redhat.com.
+38      IN      PTR     rhos4-heat2.vmnet.mpc.lab.eng.bos.redhat.com.
+39      IN      PTR     rhos4-mongodb1.vmnet.mpc.lab.eng.bos.redhat.com.
+40      IN      PTR     rhos4-mongodb2.vmnet.mpc.lab.eng.bos.redhat.com.
+41      IN      PTR     rhos4-mongodb3.vmnet.mpc.lab.eng.bos.redhat.com.
+42      IN      PTR     rhos4-mongodb4.vmnet.mpc.lab.eng.bos.redhat.com.
+43      IN      PTR     rhos4-ceilometer1.vmnet.mpc.lab.eng.bos.redhat.com.
+44      IN      PTR     rhos4-ceilometer2.vmnet.mpc.lab.eng.bos.redhat.com.
+45      IN      PTR     rhos4-swift-brick1.vmnet.mpc.lab.eng.bos.redhat.com.
+46      IN      PTR     rhos4-swift-brick2.vmnet.mpc.lab.eng.bos.redhat.com.
+47      IN      PTR     rhos4-swift-brick3.vmnet.mpc.lab.eng.bos.redhat.com.
+48      IN      PTR     rhos4-swift-brick4.vmnet.mpc.lab.eng.bos.redhat.com.
+
+200     IN      PTR     vip-mysql.vmnet.mpc.lab.eng.bos.redhat.com.
+201     IN      PTR     vip-qpid.vmnet.mpc.lab.eng.bos.redhat.com.
+202     IN      PTR     vip-keystone.vmnet.mpc.lab.eng.bos.redhat.com.
+203     IN      PTR     vip-glance.vmnet.mpc.lab.eng.bos.redhat.com.
+204     IN      PTR     vip-cinder.vmnet.mpc.lab.eng.bos.redhat.com.
+205     IN      PTR     vip-swift.vmnet.mpc.lab.eng.bos.redhat.com.
+206     IN      PTR     vip-neutron.vmnet.mpc.lab.eng.bos.redhat.com.
+207     IN      PTR     vip-nova.vmnet.mpc.lab.eng.bos.redhat.com.
+208     IN      PTR     vip-horizon.vmnet.mpc.lab.eng.bos.redhat.com.
+209     IN      PTR     vip-heat.vmnet.mpc.lab.eng.bos.redhat.com.
+210     IN      PTR     vip-mongo.vmnet.mpc.lab.eng.bos.redhat.com.
+211     IN      PTR     vip-ceilometer.vmnet.mpc.lab.eng.bos.redhat.com.
+212     IN      PTR     vip-nagios.vmnet.mpc.lab.eng.bos.redhat.com.
+
+240     IN      PTR     dhcp240.vmnet.mpc.lab.eng.bos.redhat.com.
+241     IN      PTR     dhcp241.vmnet.mpc.lab.eng.bos.redhat.com.
+242     IN      PTR     dhcp242.vmnet.mpc.lab.eng.bos.redhat.com.
+243     IN      PTR     dhcp243.vmnet.mpc.lab.eng.bos.redhat.com.
+244     IN      PTR     dhcp244.vmnet.mpc.lab.eng.bos.redhat.com.
+245     IN      PTR     dhcp245.vmnet.mpc.lab.eng.bos.redhat.com.
+246     IN      PTR     dhcp246.vmnet.mpc.lab.eng.bos.redhat.com.
+247     IN      PTR     dhcp247.vmnet.mpc.lab.eng.bos.redhat.com.
+248     IN      PTR     dhcp248.vmnet.mpc.lab.eng.bos.redhat.com.
+249     IN      PTR     dhcp249.vmnet.mpc.lab.eng.bos.redhat.com.
+250     IN      PTR     dhcp250.vmnet.mpc.lab.eng.bos.redhat.com.
+251     IN      PTR     dhcp251.vmnet.mpc.lab.eng.bos.redhat.com.
+252     IN      PTR     dhcp252.vmnet.mpc.lab.eng.bos.redhat.com.
+253     IN      PTR     dhcp253.vmnet.mpc.lab.eng.bos.redhat.com.
+EOF
+
+cat > /etc/named/vmnet.mpc.lab.eng.bos.redhat.com << EOF
+$TTL    86400
+@       IN      SOA     mrg-01. fdinitto.redhat.com. (
+                                2014021801 ; serial
+                                21600      ; refresh (24 hours)
+                                10800      ; retry (2 hours)
+                                1209600    ; expire (1000 hours)
+                                3600       ; minimum (2 days)
+                                )
+
+                        IN      NS      mrg-01.
+
+ipv6-localhost          IN      A       127.0.0.1
+                        IN      AAAA    ::1
+localhost               IN      A       127.0.0.1
+                        IN      AAAA    ::1
+
+mrg-01          IN      A       192.168.16.1
+mrg-02          IN      A       192.168.16.2
+mrg-03          IN      A       192.168.16.3
+mrg-04          IN      A       192.168.16.4
+mrg-05          IN      A       192.168.16.5
+mrg-06          IN      A       192.168.16.6
+mrg-07          IN      A       192.168.16.7
+mrg-08          IN      A       192.168.16.8
+mrg-09          IN      A       192.168.16.9
+rhos4-base      IN      A       192.168.16.10
+rhos4-lb1       IN      A       192.168.16.11
+rhos4-lb2       IN      A       192.168.16.12
+rhos4-mysql1    IN      A       192.168.16.13
+rhos4-mysql2    IN      A       192.168.16.14
+rhos4-qpid1     IN      A       192.168.16.15
+rhos4-qpid2     IN      A       192.168.16.16
+rhos4-keystone1 IN      A       192.168.16.17
+rhos4-keystone2 IN      A       192.168.16.18
+rhos4-memcache1 IN      A       192.168.16.19
+rhos4-memcache2 IN      A       192.168.16.20
+rhos4-glance1   IN      A       192.168.16.21
+rhos4-glance2   IN      A       192.168.16.22
+rhos4-cinder1   IN      A       192.168.16.23
+rhos4-cinder2   IN      A       192.168.16.24
+rhos4-swift1    IN      A       192.168.16.25
+rhos4-swift2    IN      A       192.168.16.26
+rhos4-swift-ac1  IN      A       192.168.16.27
+rhos4-swift-ac2  IN      A       192.168.16.28
+rhos4-neutron1  IN      A       192.168.16.29
+rhos4-neutron2  IN      A       192.168.16.30
+rhos4-neutron-n1        IN      A       192.168.16.31
+rhos4-neutron-n2        IN      A       192.168.16.32
+rhos4-nova1     IN      A       192.168.16.33
+rhos4-nova2     IN      A       192.168.16.34
+rhos4-horizon1  IN      A       192.168.16.35
+rhos4-horizon2  IN      A       192.168.16.36
+rhos4-heat1     IN      A       192.168.16.37
+rhos4-heat2     IN      A       192.168.16.38
+rhos4-mongodb1  IN      A       192.168.16.39
+rhos4-mongodb2  IN      A       192.168.16.40
+rhos4-mongodb3  IN      A       192.168.16.41
+rhos4-mongodb4  IN      A       192.168.16.42
+rhos4-ceilometer1       IN      A       192.168.16.43
+rhos4-ceilometer2       IN      A       192.168.16.44
+rhos4-swift-brick1    IN      A       192.168.16.45
+rhos4-swift-brick2    IN      A       192.168.16.46
+rhos4-swift-brick3    IN      A       192.168.16.47
+rhos4-swift-brick4    IN      A       192.168.16.48
+
+vip-mysql       IN      A       192.168.16.200
+vip-qpid        IN      A       192.168.16.201
+vip-keystone    IN      A       192.168.16.202
+vip-glance      IN      A       192.168.16.203
+vip-cinder      IN      A       192.168.16.204
+vip-swift       IN      A       192.168.16.205
+vip-neutron     IN      A       192.168.16.206
+vip-nova        IN      A       192.168.16.207
+vip-horizon     IN      A       192.168.16.208
+vip-heat        IN      A       192.168.16.209
+vip-mongo       IN      A       192.168.16.210
+vip-ceilometer  IN      A       192.168.16.211
+vip-nagios      IN      A       192.168.16.212
+
+dhcp240         IN      A       192.168.16.240
+dhcp241         IN      A       192.168.16.241
+dhcp242         IN      A       192.168.16.242
+dhcp243         IN      A       192.168.16.243
+dhcp244         IN      A       192.168.16.244
+dhcp245         IN      A       192.168.16.245
+dhcp246         IN      A       192.168.16.246
+dhcp247         IN      A       192.168.16.247
+dhcp248         IN      A       192.168.16.248
+dhcp249         IN      A       192.168.16.249
+dhcp250         IN      A       192.168.16.250
+dhcp251         IN      A       192.168.16.251
+dhcp252         IN      A       192.168.16.252
+dhcp253         IN      A       192.168.16.253
+
+EOF
+
+chown root:named /etc/named -R
+chmod 750 /etc/named
+chmod 640 /etc/named/*
+
+chkconfig named on
+service named start
+
+echo PEERDNS=no >> /etc/sysconfig/network-scripts/ifcfg-ext0
+echo search vmnet.mpc.lab.eng.bos.redhat.com mpc.lab.eng.bos.redhat.com > /etc/resolv.conf
+echo nameserver 10.16.144.34 >> /etc/resolv.conf
+
+ifdown ext0 && ifup ext0
+
+echo "DHCDPARGS=vmnet0" > /etc/sysconfig/dhcpd
+
+cat > /etc/dhcp/dhcpd.conf << EOF
+default-lease-time 600;
+max-lease-time 7200;
+authoritative;
+log-facility local7;
+
+subnet 192.168.16.0 netmask 255.255.255.0 {
+        range 192.168.16.240 192.168.16.253;
+        option domain-name-servers 192.168.16.1;
+        option domain-name "vmnet.mpc.lab.eng.bos.redhat.com";
+        option routers 192.168.16.1;
+}
+
+# 54:52:00: <- BASE
+# 00 <- base 01..09 <- run on mrg-XX
+# 00 eth0 (ext0) 01 eth1 (vmnet0)
+# 01 <- sequence num for the VM on that host
+
+host rhos4-base {
+  hardware ethernet 54:52:00:00:01:01;
+  fixed-address rhos4-base.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-lb1 {
+  hardware ethernet 54:52:00:07:01:01;
+  fixed-address rhos4-lb1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-lb2 {
+  hardware ethernet 54:52:00:08:01:01;
+  fixed-address rhos4-lb2.vmnet.mpc.lab.eng.bos.redhat.com;
+} 
+host rhos4-mysql1 {
+  hardware ethernet 54:52:00:07:01:02;
+  fixed-address rhos4-mysql1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-mysql2 {
+  hardware ethernet 54:52:00:08:01:02;
+  fixed-address rhos4-mysql2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-qpid1 {
+  hardware ethernet 54:52:00:07:01:03;
+  fixed-address rhos4-qpid1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-qpid2 {
+  hardware ethernet 54:52:00:08:01:03;
+  fixed-address rhos4-qpid2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-keystone1 {
+  hardware ethernet 54:52:00:07:01:04;
+  fixed-address rhos4-keystone1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-keystone2 {
+  hardware ethernet 54:52:00:08:01:04;
+  fixed-address rhos4-keystone2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-memcache1 {
+  hardware ethernet 54:52:00:07:01:05;
+  fixed-address rhos4-memcache1.vmnet.mpc.lab.eng.bos.redhat.com;
+} 
+host rhos4-memcache2 {
+  hardware ethernet 54:52:00:08:01:05;
+  fixed-address rhos4-memcache2.vmnet.mpc.lab.eng.bos.redhat.com;
+} 
+host rhos4-glance1 {
+  hardware ethernet 54:52:00:07:01:06;
+  fixed-address rhos4-glance1.vmnet.mpc.lab.eng.bos.redhat.com;
+}  
+host rhos4-glance2 {
+  hardware ethernet 54:52:00:08:01:06;
+  fixed-address rhos4-glance2.vmnet.mpc.lab.eng.bos.redhat.com;
+} 
+host rhos4-cinder1 {
+  hardware ethernet 54:52:00:07:01:07;
+  fixed-address rhos4-cinder1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-cinder2 {
+  hardware ethernet 54:52:00:08:01:07;
+  fixed-address rhos4-cinder2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-swift1 {
+  hardware ethernet 54:52:00:07:01:08;
+  fixed-address rhos4-swift1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-swift2 {
+  hardware ethernet 54:52:00:08:01:08;
+  fixed-address rhos4-swift2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-swift-ac1 {
+  hardware ethernet 54:52:00:07:01:09;
+  fixed-address rhos4-swift-ac1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-swift-ac2 {
+  hardware ethernet 54:52:00:08:01:09;
+  fixed-address rhos4-swift-ac2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-neutron1 {
+  hardware ethernet 54:52:00:07:01:0A;
+  fixed-address rhos4-neutron1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-neutron2 {
+  hardware ethernet 54:52:00:08:01:0A;
+  fixed-address rhos4-neutron2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-neutron-n1 {
+  hardware ethernet 54:52:00:07:01:0B;
+  fixed-address rhos4-neutron-n1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-neutron-n2 {
+  hardware ethernet 54:52:00:08:01:0B;
+  fixed-address rhos4-neutron-n2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-nova1 {
+  hardware ethernet 54:52:00:07:01:0C;
+  fixed-address rhos4-nova1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-nova2 {
+  hardware ethernet 54:52:00:08:01:0C;
+  fixed-address rhos4-nova2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-horizon1 {
+  hardware ethernet 54:52:00:07:01:0D;
+  fixed-address rhos4-horizon1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-horizon2 {
+  hardware ethernet 54:52:00:08:01:0D;
+  fixed-address rhos4-horizon2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-heat1 {
+  hardware ethernet 54:52:00:07:01:0E;
+  fixed-address rhos4-heat1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-heat2 {
+  hardware ethernet 54:52:00:08:01:0E;
+  fixed-address rhos4-heat2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-mongodb1 {
+  hardware ethernet 54:52:00:07:01:0F;
+  fixed-address rhos4-mongodb1.vmnet.mpc.lab.eng.bos.redhat.com;
+} 
+host rhos4-mongodb2 {
+  hardware ethernet 54:52:00:08:01:0F;
+  fixed-address rhos4-mongodb2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-mongodb3 {
+  hardware ethernet 54:52:00:07:01:10;
+  fixed-address rhos4-mongodb3.vmnet.mpc.lab.eng.bos.redhat.com;
+} 
+host rhos4-mongodb4 {
+  hardware ethernet 54:52:00:08:01:10;
+  fixed-address rhos4-mongodb4.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-ceilometer1 {
+  hardware ethernet 54:52:00:07:01:11;
+  fixed-address rhos4-ceilometer1.vmnet.mpc.lab.eng.bos.redhat.com;
+} 
+host rhos4-ceilometer2 {
+  hardware ethernet 54:52:00:08:01:11;
+  fixed-address rhos4-ceilometer2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-swift-brick1 {
+  hardware ethernet 54:52:00:07:01:12;
+  fixed-address rhos4-swift-brick1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-swift-brick2 {
+  hardware ethernet 54:52:00:08:01:12;
+  fixed-address rhos4-swift-brick2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-swift-brick3 {
+  hardware ethernet 54:52:00:07:01:13;
+  fixed-address rhos4-swift-brick3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-swift-brick4 {
+  hardware ethernet 54:52:00:08:01:13;
+  fixed-address rhos4-swift-brick4.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+EOF
+
+chkconfig dhcpd on
+service dhcpd start
+
+echo "/srv 192.168.16.0/255.255.255.0(rw,sync,no_root_squash,subtree_check,fsid=10)" > /etc/exports
+
+chkconfig nfs on
+chkconfig nfslock on
+
+TBA: base image sync from shell.eng (backup on mrg-02)
+rhel6.5 install, use eth0 for external net (off by deafult), eth1 on vmne0 in dhcp, ntp/dns/dhcp/default route points to mrg-01.
+
+all but mrg01:
+
+mkdir -p /srv
+echo "192.168.16.1:/srv       /srv                    nfs     defaults,v3     0 0" >> /etc/fstab
+mount -a
+
+mrg-02 (daily backup):
+
+cat > /etc/cron.daily/rhos-backup << EOF
+\#!/bin/bash
+mkdir -p /backup
+rsync -av --quiet /srv/* /backup/
+EOF
+
+chmod 755 /etc/cron.daily/rhos-backup
+
+mrg-07|08 (vm nodes):
+
+yum install -y fence-virtd fence-virtd-multicast fence-virtd-libvirt
+
+lastoct="$(hostname -s | sed -e 's#mrg-0##g')"
+cat > /etc/fence_virt.conf << EOF
+fence_virtd {
+        listener = "multicast";
+        backend = "libvirt";
+}
+
+listeners {
+        multicast {
+                # key_file = "/etc/cluster/fence_xvm.key";
+                address = "225.0.0.$lastoct";
+                # Needed on Fedora systems
+                interface = "vmnet0";
+        }
+}
+
+backends {
+        libvirt { 
+                uri = "qemu:///system";
+        }
+}
+EOF
+
+# XXX remember to file a bug
+chkconfig --add fence_virtd
+chkconfig  fence_virtd on
+service fence_virtd start
+
+mkdir -p /localvms
+cp /srv/vms/rhos4-base.img /localvms/
+
+mrg07:
+
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-lb1.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-mysql1.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-qpid1.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-keystone1.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-memcache1.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-glance1.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-cinder1.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-swift1.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-swift-brick1.cow
+truncate --size=10G /localvms/rhos4-swift-brick1_data.img
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-swift-brick3.cow
+truncate --size=10G /localvms/rhos4-swift-brick3_data.img
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-neutron1.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-neutron-n1.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-nova1.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-horizon1.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-heat1.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-mongodb1.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-mongodb3.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-ceilometer1.cow
+
+virsh define /srv/vms/rhos4-lb1.xml
+virsh start rhos4-lb1
+virsh define /srv/vms/rhos4-mysql1.xml
+virsh start rhos4-mysql1
+virsh define /srv/vms/rhos4-qpid1.xml
+virsh start rhos4-qpid1
+virsh define /srv/vms/rhos4-keystone1.xml
+virsh start rhos4-keystone1
+virsh define /srv/vms/rhos4-memcache1.xml
+virsh start rhos4-memcache1
+virsh define /srv/vms/rhos4-glance1.xml
+virsh start rhos4-glance1
+virsh define /srv/vms/rhos4-cinder1.xml
+virsh start rhos4-cinder1
+virsh define /srv/vms/rhos4-swift1.xml
+virsh start rhos4-swift1
+virsh define /srv/vms/rhos4-swift-brick1.xml
+virsh start rhos4-swift-brick1
+virsh define /srv/vms/rhos4-swift-brick3.xml
+virsh start rhos4-swift-brick3
+virsh define /srv/vms/rhos4-neutron1.xml
+virsh start rhos4-neutron1
+virsh define /srv/vms/rhos4-neutron-n1.xml
+virsh start rhos4-neutron-n1
+virsh define /srv/vms/rhos4-nova1.xml
+virsh start rhos4-nova1
+virsh define /srv/vms/rhos4-horizon1.xml
+virsh start rhos4-horizon1
+virsh define /srv/vms/rhos4-heat1.xml
+virsh start rhos4-heat1
+virsh define /srv/vms/rhos4-mongodb1.xml
+virsh start rhos4-mongodb1
+virsh define /srv/vms/rhos4-mongodb3.xml
+virsh start rhos4-mongodb3
+virsh define /srv/vms/rhos4-ceilometer1.xml
+virsh start rhos4-ceilometer1
+
+mrg08:
+
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-lb2.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-mysql2.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-qpid2.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-keystone2.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-memcache2.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-glance2.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-cinder2.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-swift2.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-swift-brick2.cow
+truncate --size=10G /localvms/rhos4-swift-brick2_data.img
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-swift-brick4.cow
+truncate --size=10G /localvms/rhos4-swift-brick4_data.img
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-neutron2.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-neutron-n2.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-nova2.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-horizon2.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-heat2.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-mongodb2.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-mongodb4.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-ceilometer2.cow
+
+virsh define /srv/vms/rhos4-lb2.xml
+virsh start rhos4-lb2
+virsh define /srv/vms/rhos4-mysql2.xml 
+virsh start rhos4-mysql2
+virsh define /srv/vms/rhos4-qpid2.xml
+virsh start rhos4-qpid2
+virsh define /srv/vms/rhos4-keystone2.xml
+virsh start rhos4-keystone2
+virsh define /srv/vms/rhos4-memcache2.xml
+virsh start rhos4-memcache2
+virsh define /srv/vms/rhos4-glance2.xml
+virsh start rhos4-glance2
+virsh define /srv/vms/rhos4-cinder2.xml
+virsh start rhos4-cinder2
+virsh define /srv/vms/rhos4-swift2.xml
+virsh start rhos4-swift2
+virsh define /srv/vms/rhos4-swift-brick2.xml
+virsh start rhos4-swift-brick2
+virsh define /srv/vms/rhos4-swift-brick4.xml
+virsh start rhos4-swift-brick4
+virsh define /srv/vms/rhos4-neutron2.xml
+virsh start rhos4-neutron2
+virsh define /srv/vms/rhos4-neutron-n2.xml
+virsh start rhos4-neutron-n2
+virsh define /srv/vms/rhos4-nova2.xml
+virsh start rhos4-nova2
+virsh define /srv/vms/rhos4-horizon2.xml
+virsh start rhos4-horizon2
+virsh define /srv/vms/rhos4-heat2.xml
+virsh start rhos4-heat2
+virsh define /srv/vms/rhos4-mongodb2.xml
+virsh start rhos4-mongodb2
+virsh define /srv/vms/rhos4-mongodb4.xml
+virsh start rhos4-mongodb4
+virsh define /srv/vms/rhos4-ceilometer2.xml
+virsh start rhos4-ceilometer2
+

@@ -1,0 +1,82 @@
+
+yum install -y openstack-cinder openstack-utils openstack-selinux python-memcached
+
+openstack-config --set /etc/cinder/cinder.conf DEFAULT auth_strategy keystone
+openstack-config --set /etc/cinder/cinder.conf keystone_authtoken auth_host vip-keystone
+openstack-config --set /etc/cinder/cinder.conf keystone_authtoken admin_tenant_name services
+openstack-config --set /etc/cinder/cinder.conf keystone_authtoken admin_user cinder
+openstack-config --set /etc/cinder/cinder.conf keystone_authtoken admin_password cindertest
+openstack-config --set /etc/cinder/cinder.conf DEFAULT rpc_backend cinder.openstack.common.rpc.impl_qpid
+openstack-config --set /etc/cinder/cinder.conf DEFAULT qpid_hostname vip-qpid
+openstack-config --set /etc/cinder/cinder.conf DEFAULT qpid_heartbeat 2
+openstack-config --set /etc/cinder/cinder.conf DEFAULT sql_connection mysql://cinder:cindertest@vip-mysql/cinder
+openstack-config --set /etc/cinder/cinder.conf DEFAULT max_retries -1
+openstack-config --set /etc/cinder/cinder.conf DEFAULT retry_interval 1
+openstack-config --set /etc/cinder/cinder.conf DEFAULT glance_host vip-glance
+openstack-config --set /etc/cinder/cinder.conf keystone_authtoken memcached_servers rhos4-memcache1:11211,rhos4-memcache2:11211
+
+mkdir -p /srv/rhos/cinder
+cat > /etc/cinder/nfs_exports << EOF
+mrg-01:/srv/rhos/cinder
+EOF
+
+chown root:cinder /etc/cinder/nfs_exports
+chmod 0640 /etc/cinder/nfs_exports
+
+openstack-config --set /etc/cinder/cinder.conf DEFAULT nfs_shares_config /etc/cinder/nfs_exports
+openstack-config --set /etc/cinder/cinder.conf DEFAULT nfs_sparsed_volumes true
+openstack-config --set /etc/cinder/cinder.conf DEFAULT nfs_mount_options v3
+
+openstack-config --set /etc/cinder/cinder.conf DEFAULT volume_driver cinder.volume.drivers.nfs.NfsDriver
+
+# ceilometer hooks
+openstack-config --set /etc/cinder/cinder.conf DEFAULT notification_driver cinder.openstack.common.notifier.rpc_notifier
+openstack-config --set /etc/cinder/cinder.conf DEFAULT rpc_backend cinder.openstack.common.rpc.impl_qpid
+openstack-config --set /etc/cinder/cinder.conf DEFAULT control_exchange cinder
+
+rhos4-cinder1
+
+. /srv/rhos/configs/keystonerc_admin
+keystone user-create --name cinder --pass cindertest
+keystone user-role-add --user cinder --role admin --tenant services
+keystone service-create --name cinder --type volume --description "Cinder Volume Service"
+keystone endpoint-create --service cinder --publicurl "http://vip-cinder:8776/v1/\$(tenant_id)s" --adminurl "http://vip-cinder:8776/v1/\$(tenant_id)s" --internalurl "http://vip-cinder:8776/v1/\$(tenant_id)s"
+
+mysql --user=root --password=mysqltest --host=vip-mysql
+CREATE DATABASE cinder;
+GRANT ALL ON cinder.* TO 'cinder'@'%' IDENTIFIED BY 'cindertest';
+FLUSH PRIVILEGES;
+quit
+
+su cinder -s /bin/sh -c "cinder-manage db sync"
+
+rhos4-cinder1|rhos4-cinder2
+
+chkconfig pacemaker on
+pcs cluster setup --name rhos4-cinder rhos4-cinder1 rhos4-cinder2
+pcs cluster start
+
+sleep 30
+
+pcs stonith create cinder1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos4-cinder1
+
+pcs stonith create cinder2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos4-cinder2
+
+pcs resource create cinder-api lsb:openstack-cinder-api --clone
+pcs resource create cinder-scheduler lsb:openstack-cinder-scheduler --clone
+pcs resource create cinder-volume lsb:openstack-cinder-volume --clone
+
+pcs constraint order start cinder-api-clone then cinder-scheduler-clone
+pcs constraint colocation add cinder-scheduler with cinder-api
+pcs constraint order start cinder-scheduler-clone then cinder-volume-clone
+pcs constraint colocation add cinder-volume with cinder-scheduler
+
+# TEST:
+. /srv/rhos/configs/keystonerc_admin
+
+cinder list
+cinder create 10
+cinder list
+cinder delete $(cinder list | grep available | awk '{print $2}')
+cinder list
+

@@ -1,0 +1,68 @@
+# OPTION1: active hot-standby
+# NOTE 08:41 < gsim> fabbione: qpid-perftest is probably the simplest thing (though its quite old and uses a deprecated api, the protocol is the same on the wire)
+
+rhos4-qpid1|rhos4-qpid2:
+
+yum install -y qpid-tools qpid-cpp-server
+
+qpidd.conf:
+
+cat > /etc/qpidd.conf << EOF
+port=5672
+max-connections=500
+worker-threads=17
+connection-backlog=10
+auth=no
+realm=QPID
+EOF
+
+chkconfig pacemaker on
+pcs cluster setup --name rhos4-qpid rhos4-qpid1 rhos4-qpid2
+pcs cluster start
+
+sleep 30
+
+pcs stonith create qpid1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos4-qpid1
+
+pcs stonith create qpid2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos4-qpid2
+
+pcs resource create qpidd lsb:qpidd --clone
+
+# OPTION2: clustererd mode (deprecated?):
+
+rhos4-qpid1|rhos4-qpid2:
+
+yum install -y qpid-tools qpid-cpp-server-cluster
+
+qpidd.conf:
+
+cat > /etc/qpidd.conf << EOF
+cluster-name="qpid-cluster"
+#cluster-cman=yes
+port=5672
+max-connections=500
+worker-threads=17
+connection-backlog=10
+auth=no
+realm=QPID
+#cluster-clock-interval=100
+EOF
+
+chkconfig pacemaker on
+pcs cluster setup --name rhos4-qpid rhos4-qpid1 rhos4-qpid2
+pcs cluster uidgid add uid=qpidd gid=qpidd
+pcs cluster start
+
+sleep 30
+
+pcs stonith create qpid1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos4-qpid1
+
+pcs stonith create qpid2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos4-qpid2
+
+pcs resource create qpidd lsb:qpidd --clone
+
+# TEST:
+qpid-cluster
+
+
+

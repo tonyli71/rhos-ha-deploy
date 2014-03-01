@@ -1,0 +1,33 @@
+rhos4-mysql1|rhos4-mysql2:
+
+yum install -y mysql mysql-server nfs-utils
+
+mkdir -p /srv/rhos/mysql
+
+chkconfig pacemaker on
+pcs cluster setup --name rhos4-mysql rhos4-mysql1 rhos4-mysql2
+pcs cluster start
+
+sleep 30
+
+rhos4-mysql1:
+
+pcs stonith create mysql1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos4-mysql1
+
+pcs stonith create mysql2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos4-mysql2
+
+pcs  resource create  mysql-fs Filesystem device="mrg-01:/srv/rhos/mysql"  directory="/var/lib/mysql"  fstype="nfs" options="v3" --group  mysql-group
+
+# On the node running mysql:
+
+cp /etc/my.cnf /var/lib/mysql/
+
+pcs resource create mysql-db mysql config=/var/lib/mysql/my.cnf enable_creation=1 op start timeout=120s --group mysql-group
+
+mysql mysql
+drop user ''@'rhos4-mysql1.vmnet.mpc.lab.eng.bos.redhat.com';
+drop user 'root'@'rhos4-mysql1.vmnet.mpc.lab.eng.bos.redhat.com';
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED by 'mysqltest' WITH GRANT OPTION;
+flush privileges;
+quit
+

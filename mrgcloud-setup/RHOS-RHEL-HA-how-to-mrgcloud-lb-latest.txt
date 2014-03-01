@@ -1,0 +1,184 @@
+rhos4-lb1|rhos4-lb2:
+
+yum install -y haproxy
+
+echo net.ipv4.ip_nonlocal_bind=1 >> /etc/sysctl.conf
+echo 1 > /proc/sys/net/ipv4/ip_nonlocal_bind
+
+cat > /etc/haproxy/haproxy.cfg << EOF
+global
+    daemon
+defaults
+    mode tcp
+    maxconn 10000
+    timeout connect 2s
+    timeout client 10s
+    timeout server 10s
+frontend vip-mysql
+    bind 192.168.16.200:3306
+    timeout client 90s
+    default_backend mysql-vms
+backend mysql-vms
+    balance roundrobin
+    timeout server 90s
+    server rhos4-mysql1 192.168.16.13:3306 check inter 1s
+    server rhos4-mysql2 192.168.16.14:3306 check inter 1s
+frontend vip-qpid
+    bind 192.168.16.201:5672
+    default_backend qpid-vms
+backend qpid-vms
+# comment stick-table out
+# and add balance roundrobin for A/A cluster mode in qpid
+    stick-table type ip size 2
+    stick on dst
+    server rhos4-qpid1 192.168.16.15:5672 check inter 1s
+    server rhos4-qpid2 192.168.16.16:5672 check inter 1s
+frontend vip-keystone-admin
+    bind 192.168.16.202:35357
+    default_backend keystone-admin-vms
+backend keystone-admin-vms
+    balance roundrobin
+    server rhos4-keystone1 192.168.16.17:35357 check inter 1s
+    server rhos4-keystone2 192.168.16.18:35357 check inter 1s
+frontend vip-keystone-public
+    bind 192.168.16.202:5000
+    default_backend keystone-public-vms
+backend keystone-public-vms
+    balance roundrobin
+    server rhos4-keystone1 192.168.16.17:5000 check inter 1s
+    server rhos4-keystone2 192.168.16.18:5000 check inter 1s
+# skip 2 ip for memcached
+frontend vip-glance-api
+    bind 192.168.16.203:9191
+    default_backend glance-api-vms
+backend glance-api-vms
+    balance roundrobin
+    server rhos4-glance1 192.168.16.21:9191 check inter 1s
+    server rhos4-glance2 192.168.16.22:9191 check inter 1s
+frontend vip-glance-registry
+    bind 192.168.16.203:9292
+    default_backend glance-registry-vms
+backend glance-registry-vms
+    balance roundrobin
+    server rhos4-glance1 192.168.16.21:9292 check inter 1s
+    server rhos4-glance2 192.168.16.22:9292 check inter 1s
+frontend vip-cinder
+    bind 192.168.16.204:8776
+    default_backend cinder-vms
+backend cinder-vms
+    balance roundrobin
+    server rhos4-cinder1 192.168.16.23:8776 check inter 1s
+    server rhos4-cinder2 192.168.16.24:8776 check inter 1s
+frontend vip-swift
+    bind 192.168.16.205:8080
+    default_backend swift-vms
+backend swift-vms
+    balance roundrobin
+    server rhos4-swift1 192.168.16.25:8080 check inter 1s
+    server rhos4-swift2 192.168.16.26:8080 check inter 1s
+# skip 2 ip for swift containers (no LB)
+frontend vip-neutron
+    bind 192.168.16.206:9696
+    default_backend neutron-vms
+backend neutron-vms
+    balance roundrobin
+    server rhos4-neutron1 192.168.16.29:9696 check inter 1s
+    server rhos4-neutron2 192.168.16.30:9696 check inter 1s
+# skip 2 for neutron network nodes
+frontend vip-nova-vnc-novncproxy
+    bind 192.168.16.207:6080
+    default_backend nova-vnc-novncproxy-vms
+backend nova-vnc-novncproxy-vms
+    balance roundrobin
+    server rhos4-nova1 192.168.16.33:6080 check inter 1s
+    server rhos4-nova2 192.168.16.34:6080 check inter 1s
+frontend vip-nova-vnc-xvpvncproxy
+    bind 192.168.16.207:6081
+    default_backend nova-vnc-xvpvncproxy-vms
+backend nova-vnc-xvpvncproxy-vms
+    balance roundrobin
+    server rhos4-nova1 192.168.16.33:6081 check inter 1s
+    server rhos4-nova2 192.168.16.34:6081 check inter 1s
+frontend vip-nova-metadata
+    bind 192.168.16.207:8775
+    default_backend nova-metadata-vms
+backend nova-metadata-vms
+    balance roundrobin
+    server rhos4-nova1 192.168.16.33:8775 check inter 1s
+    server rhos4-nova2 192.168.16.34:8775 check inter 1s
+frontend vip-nova-api
+    bind 192.168.16.207:8774
+    default_backend nova-api-vms
+backend nova-api-vms
+    balance roundrobin
+    server rhos4-nova1 192.168.16.33:8774 check inter 1s
+    server rhos4-nova2 192.168.16.34:8774 check inter 1s
+frontend vip-horizon
+    bind 192.168.16.208:80
+    default_backend horizon-vms
+backend horizon-vms
+    balance roundrobin
+    server rhos4-horizon1 192.168.16.35:80 check inter 1s
+    server rhos4-horizon2 192.168.16.36:80 check inter 1s
+frontend vip-heat-cfn
+    bind 192.168.16.209:8000
+    default_backend heat-cfn-vms
+backend heat-cfn-vms
+    balance roundrobin
+    server rhos4-heat1 192.168.16.37:8000 check inter 1s
+    server rhos4-heat2 192.168.16.38:8000 check inter 1s
+frontend vip-heat-cloudw
+    bind 192.168.16.209:8003
+    default_backend heat-cloudw-vms
+backend heat-cloudw-vms
+    balance roundrobin
+    server rhos4-heat1 192.168.16.37:8003 check inter 1s
+    server rhos4-heat2 192.168.16.38:8003 check inter 1s
+frontend vip-heat-srv
+    bind 192.168.16.209:8004
+    default_backend heat-srv-vms
+backend heat-srv-vms
+    balance roundrobin
+    server rhos4-heat1 192.168.16.37:8004 check inter 1s
+    server rhos4-heat2 192.168.16.38:8004 check inter 1s
+frontend vip-mongo
+    bind 192.168.16.210:27017
+    default_backend mongo-vms
+backend mongo-vms
+    balance roundrobin
+    server rhos4-mongodb1 192.168.16.39:27017 check inter 1s
+    server rhos4-mongodb2 192.168.16.40:27017 check inter 1s
+    server rhos4-mongodb3 192.168.16.41:27017 check inter 1s
+    server rhos4-mongodb4 192.168.16.42:27017 check inter 1s
+frontend vip-ceilometer
+    bind 192.168.16.211:8777
+    default_backend ceilometer-vms
+backend ceilometer-vms
+    server rhos4-ceilometer1 192.168.16.43:8777 check inter 1s
+    server rhos4-ceilometer2 192.168.16.44:8777 check inter 1s
+EOF
+
+chkconfig pacemaker on
+pcs cluster setup --name rhos4-lb rhos4-lb1 rhos4-lb2
+pcs cluster start
+
+sleep 30
+
+pcs stonith create lb1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos4-lb1
+pcs stonith create lb2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos4-lb2
+pcs resource create lb-haproxy lsb:haproxy --clone
+
+pcs resource create vip-mysql IPaddr2 ip=192.168.16.200
+pcs resource create vip-qpid IPaddr2 ip=192.168.16.201
+pcs resource create vip-keystone IPaddr2 ip=192.168.16.202
+pcs resource create vip-glance IPaddr2 ip=192.168.16.203
+pcs resource create vip-cinder IPaddr2 ip=192.168.16.204
+pcs resource create vip-swift IPaddr2 ip=192.168.16.205
+pcs resource create vip-neutron IPaddr2 ip=192.168.16.206
+pcs resource create vip-nova IPaddr2 ip=192.168.16.207
+pcs resource create vip-horizon IPaddr2 ip=192.168.16.208
+pcs resource create vip-heat IPaddr2 ip=192.168.16.209
+pcs resource create vip-mongo IPaddr2 ip=192.168.16.210
+pcs resource create vip-ceilometer IPaddr2 ip=192.168.16.211
+
+
