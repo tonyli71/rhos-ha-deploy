@@ -166,6 +166,7 @@ sleep 30
 
 pcs stonith create lb1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos4-lb1
 pcs stonith create lb2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos4-lb2
+
 pcs resource create lb-haproxy lsb:haproxy --clone
 
 pcs resource create vip-mysql IPaddr2 ip=192.168.16.200

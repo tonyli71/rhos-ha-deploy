@@ -54,9 +54,15 @@ http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-computenode
 
 RANDOM NOTES FOLLOW:
 
+https://github.com/fabbione/rhos-ha-deploy
+
+Current DC: mrg-04 - partition with quorum
+^^^
+
+Online: [ rhos4-lb1 rhos4-lb2 ]
+^^^^
+
 # TODO:
-neutron debugging:
-in progress by Ajo
 rabbitmq testing:
 use rohara how to
 mysql check for all services:

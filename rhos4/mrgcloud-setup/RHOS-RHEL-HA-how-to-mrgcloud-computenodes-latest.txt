@@ -23,6 +23,9 @@ to make it into the formal documentation or at the least kbases
 
 mrg-03|
 
+## HACK OF DEATH
+wget -O /etc/yum.repos.d/ajo.repo http://file.rdu.redhat.com/~majopela/neutron-ha-fixes-repo/neutron_ha_fix.repo
+
 yum install -y openstack-nova-compute openstack-utils python-cinder openstack-neutron-openvswitch openstack-ceilometer-compute
 
 echo PEERDNS=no >> /etc/sysconfig/network-scripts/ifcfg-ext0
@@ -43,16 +46,6 @@ BOOTPROTO=none
 EOF
 
 ovs-vsctl add-br br-int
-
-
-# HACK: https://bugzilla.redhat.com/show_bug.cgi?id=1060709
-
-if [ ! -f /etc/init.d/neutron-db-check ]; then
-wget https://bugzilla.redhat.com/attachment.cgi?id=859563 -O /etc/init.d/neutron-db-check
-chmod 755 /etc/init.d/neutron-db-check
-chkconfig --add neutron-db-check
-chkconfig neutron-db-check off
-fi
 
 openstack-config --set /etc/nova/nova.conf DEFAULT memcached_servers rhos4-memcache1:11211,rhos4-memcache2:11211
 openstack-config   --set /etc/nova/nova.conf DEFAULT vncserver_proxyclient_address $(ip   addr show dev vmnet0 scope global | grep inet | sed -e 's#.*inet ##g'  -e  's#/.*##g')
@@ -111,6 +104,7 @@ openstack-config --set /etc/nova/nova.conf DEFAULT instance_usage_audit_period h
 openstack-config --set /etc/nova/nova.conf DEFAULT notify_on_state_change vm_and_task_state
 openstack-config --set /etc/nova/nova.conf DEFAULT notification_driver nova.openstack.common.notifier.rpc_notifier
 openstack-config --set /etc/nova/nova.conf DEFAULT notification_driver ceilometer.compute.nova_notifier
+
 openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken auth_host vip-keystone
 openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken auth_port 35357
 openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken auth_protocol http
