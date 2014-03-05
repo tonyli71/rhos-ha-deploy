@@ -1,7 +1,5 @@
 rhos4-neutron-n1|rhos4-neutron-n2:
 
-## A/P now works!!! ##
-
 ### SUPER HACK OF DEATH ###
 wget -O /etc/yum.repos.d/ajo.repo http://file.rdu.redhat.com/~majopela/neutron-ha-fixes-repo/neutron_ha_fix.repo
 
@@ -85,6 +83,7 @@ openstack-config --set /etc/neutron/agent_watch.ini DEFAULT admin_user neutron
 openstack-config --set /etc/neutron/agent_watch.ini DEFAULT admin_password neutrontest
 openstack-config --set /etc/neutron/agent_watch.ini DEFAULT watched_agents l3:/var/run/neutron/neutron-l3-agent.pid:/var/run/neutron/neutron-l3-agent.status:host=rhos4-neutron-n
 openstack-config --set /etc/neutron/agent_watch.ini DEFAULT check_interval 20
+openstack-config --set /etc/neutron/agent_watch.ini DEFAULT max_agent_downtime 3600
 
 #ceilometer
 openstack-config --set /etc/neutron/neutron.conf DEFAULT notification_driver neutron.openstack.common.notifier.rpc_notifier

@@ -21,9 +21,9 @@ to make it into the formal documentation or at the least kbases
 
 ## RATIONALE ##
 
-mrg-03|
+mrg-03||mrg-04
 
-## HACK OF DEATH
+### SUPER HACK OF DEATH ###
 wget -O /etc/yum.repos.d/ajo.repo http://file.rdu.redhat.com/~majopela/neutron-ha-fixes-repo/neutron_ha_fix.repo
 
 yum install -y openstack-nova-compute openstack-utils python-cinder openstack-neutron-openvswitch openstack-ceilometer-compute

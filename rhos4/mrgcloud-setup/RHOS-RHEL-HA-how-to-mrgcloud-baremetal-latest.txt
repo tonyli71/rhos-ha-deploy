@@ -7,13 +7,8 @@ mrg-vip78.mpc.lab.eng.bos.redhat.com
 mrg-vip79.mpc.lab.eng.bos.redhat.com
 mrg-vip80.mpc.lab.eng.bos.redhat.com
 mrg-vip81.mpc.lab.eng.bos.redhat.com
-
-^^^allocated to neutron
-
 mrg-vip82.mpc.lab.eng.bos.redhat.com
 mrg-vip83.mpc.lab.eng.bos.redhat.com
-
-^^^currently free, might have to assign them to neutron-n1 and neutron-n2
 
 cat > /etc/yum.repos.d/custom.repo << EOF
 [rhel6.5]
