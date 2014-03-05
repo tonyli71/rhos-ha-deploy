@@ -150,6 +150,7 @@ backend mongo-vms
     server rhos4-mongodb2 192.168.16.40:27017 check inter 1s
     server rhos4-mongodb3 192.168.16.41:27017 check inter 1s
     server rhos4-mongodb4 192.168.16.42:27017 check inter 1s
+# CEILOMETER TIMEOUTS OF DEATH!!!
 frontend vip-ceilometer
     bind 192.168.16.211:8777
     timeout client 90s
