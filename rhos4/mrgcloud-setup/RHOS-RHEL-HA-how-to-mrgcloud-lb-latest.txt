@@ -160,6 +160,16 @@ backend ceilometer-vms
     timeout server 90s
     server rhos4-ceilometer1 192.168.16.43:8777 check inter 1s
     server rhos4-ceilometer2 192.168.16.44:8777 check inter 1s
+# add nagios here
+frontend vip-rabbitmq
+    bind 192.168.16.213:5672
+    default_backend rabbitmq-vms
+backend ceilometer-vms
+    balance roundrobin
+    server rhos4-rabbitmq1 192.168.16.49:5672 check inter 1s
+    server rhos4-rabbitmq2 192.168.16.50:5672 check inter 1s
+    server rhos4-rabbitmq3 192.168.16.51:5672 check inter 1s
+    server rhos4-rabbitmq4 192.168.16.52:5672 check inter 1s
 EOF
 
 chkconfig pacemaker on
@@ -185,5 +195,7 @@ pcs resource create vip-horizon IPaddr2 ip=192.168.16.208
 pcs resource create vip-heat IPaddr2 ip=192.168.16.209
 pcs resource create vip-mongo IPaddr2 ip=192.168.16.210
 pcs resource create vip-ceilometer IPaddr2 ip=192.168.16.211
+pcs resource create vip-nagios IPaddr2 ip=192.168.16.212
+pcs resource create vip-rabbitmq IPaddr2 ip=192.168.16.213
 
 

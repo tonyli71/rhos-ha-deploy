@@ -182,7 +182,7 @@ EOF
 cat > /etc/named/192.168.16.arpa << EOF
 $TTL    86400
 @       IN      SOA     mrg-01. fdinitto.redhat.com.  (
-                                      2014030601 ; Serial
+                                      2014030602 ; Serial
                                       21600      ; Refresh
                                       10800      ; Retry
                                       1209600    ; Expire
@@ -255,6 +255,7 @@ $TTL    86400
 210     IN      PTR     vip-mongo.vmnet.mpc.lab.eng.bos.redhat.com.
 211     IN      PTR     vip-ceilometer.vmnet.mpc.lab.eng.bos.redhat.com.
 212     IN      PTR     vip-nagios.vmnet.mpc.lab.eng.bos.redhat.com.
+213     IN      PTR     vip-rabbitmq.vmnet.mpc.lab.eng.bos.redhat.com.
 
 240     IN      PTR     dhcp240.vmnet.mpc.lab.eng.bos.redhat.com.
 241     IN      PTR     dhcp241.vmnet.mpc.lab.eng.bos.redhat.com.
@@ -275,7 +276,7 @@ EOF
 cat > /etc/named/vmnet.mpc.lab.eng.bos.redhat.com << EOF
 $TTL    86400
 @       IN      SOA     mrg-01. fdinitto.redhat.com. (
-                                2014030601 ; serial
+                                2014030602 ; serial
                                 21600      ; refresh (24 hours)
                                 10800      ; retry (2 hours)
                                 1209600    ; expire (1000 hours)
@@ -355,6 +356,8 @@ vip-heat        IN      A       192.168.16.209
 vip-mongo       IN      A       192.168.16.210
 vip-ceilometer  IN      A       192.168.16.211
 vip-nagios      IN      A       192.168.16.212
+vip-rabbitmq    IN      A       192.168.16.213
+
 
 dhcp240         IN      A       192.168.16.240
 dhcp241         IN      A       192.168.16.241
