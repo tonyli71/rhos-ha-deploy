@@ -182,7 +182,7 @@ EOF
 cat > /etc/named/192.168.16.arpa << EOF
 $TTL    86400
 @       IN      SOA     mrg-01. fdinitto.redhat.com.  (
-                                      2014021801 ; Serial
+                                      2014030601 ; Serial
                                       21600      ; Refresh
                                       10800      ; Retry
                                       1209600    ; Expire
@@ -237,6 +237,10 @@ $TTL    86400
 46      IN      PTR     rhos4-swift-brick2.vmnet.mpc.lab.eng.bos.redhat.com.
 47      IN      PTR     rhos4-swift-brick3.vmnet.mpc.lab.eng.bos.redhat.com.
 48      IN      PTR     rhos4-swift-brick4.vmnet.mpc.lab.eng.bos.redhat.com.
+49      IN      PTR     rhos4-rabbitmq1.vmnet.mpc.lab.eng.bos.redhat.com.
+50      IN      PTR     rhos4-rabbitmq2.vmnet.mpc.lab.eng.bos.redhat.com.
+51      IN      PTR     rhos4-rabbitmq3.vmnet.mpc.lab.eng.bos.redhat.com.
+52      IN      PTR     rhos4-rabbitmq4.vmnet.mpc.lab.eng.bos.redhat.com.
 
 200     IN      PTR     vip-mysql.vmnet.mpc.lab.eng.bos.redhat.com.
 201     IN      PTR     vip-qpid.vmnet.mpc.lab.eng.bos.redhat.com.
@@ -271,7 +275,7 @@ EOF
 cat > /etc/named/vmnet.mpc.lab.eng.bos.redhat.com << EOF
 $TTL    86400
 @       IN      SOA     mrg-01. fdinitto.redhat.com. (
-                                2014021801 ; serial
+                                2014030601 ; serial
                                 21600      ; refresh (24 hours)
                                 10800      ; retry (2 hours)
                                 1209600    ; expire (1000 hours)
@@ -333,6 +337,10 @@ rhos4-swift-brick1    IN      A       192.168.16.45
 rhos4-swift-brick2    IN      A       192.168.16.46
 rhos4-swift-brick3    IN      A       192.168.16.47
 rhos4-swift-brick4    IN      A       192.168.16.48
+rhos4-rabbitmq1         IN      A       192.168.16.49
+rhos4-rabbitmq2         IN      A       192.168.16.50
+rhos4-rabbitmq3         IN      A       192.168.16.51
+rhos4-rabbitmq4         IN      A       192.168.16.52
 
 vip-mysql       IN      A       192.168.16.200
 vip-qpid        IN      A       192.168.16.201
@@ -554,6 +562,22 @@ host rhos4-swift-brick4 {
   hardware ethernet 54:52:00:08:01:13;
   fixed-address rhos4-swift-brick4.vmnet.mpc.lab.eng.bos.redhat.com;
 }
+host rhos4-rabbitmq1 {
+  hardware ethernet 54:52:00:07:01:14;
+  fixed-address rhos4-rabbitmq1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-rabbitmq2 {
+  hardware ethernet 54:52:00:08:01:14;
+  fixed-address rhos4-rabbitmq2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-rabbitmq3 {
+  hardware ethernet 54:52:00:07:01:15;
+  fixed-address rhos4-rabbitmq3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos4-rabbitmq4 {
+  hardware ethernet 54:52:00:08:01:15;
+  fixed-address rhos4-rabbitmq4.vmnet.mpc.lab.eng.bos.redhat.com;
+}
 EOF
 
 chkconfig dhcpd on
@@ -640,6 +664,8 @@ qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-heat1.cow
 qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-mongodb1.cow
 qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-mongodb3.cow
 qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-ceilometer1.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-rabbitmq1.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-rabbitmq3.cow
 
 virsh define /srv/vms/rhos4-lb1.xml
 virsh start rhos4-lb1
@@ -677,6 +703,10 @@ virsh define /srv/vms/rhos4-mongodb3.xml
 virsh start rhos4-mongodb3
 virsh define /srv/vms/rhos4-ceilometer1.xml
 virsh start rhos4-ceilometer1
+virsh define /srv/vms/rhos4-rabbitmq1.xml
+virsh start rhos4-rabbitmq1
+virsh define /srv/vms/rhos4-rabbitmq3.xml
+virsh start rhos4-rabbitmq3
 
 mrg08:
 
@@ -700,6 +730,8 @@ qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-heat2.cow
 qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-mongodb2.cow
 qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-mongodb4.cow
 qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-ceilometer2.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-rabbitmq2.cow
+qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-rabbitmq4.cow
 
 virsh define /srv/vms/rhos4-lb2.xml
 virsh start rhos4-lb2
@@ -737,4 +769,8 @@ virsh define /srv/vms/rhos4-mongodb4.xml
 virsh start rhos4-mongodb4
 virsh define /srv/vms/rhos4-ceilometer2.xml
 virsh start rhos4-ceilometer2
+virsh define /srv/vms/rhos4-rabbitmq2.xml
+virsh start rhos4-rabbitmq2
+virsh define /srv/vms/rhos4-rabbitmq4.xml
+virsh start rhos4-rabbitmq4
 

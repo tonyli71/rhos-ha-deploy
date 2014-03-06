@@ -1,0 +1,71 @@
+(UNSUPPORTED)
+rhos4-rabbitmq1|rhos4-rabbitmq2|rhos4-rabbitmq3|rhos4-rabbitmq4:
+
+# Based on: http://openstack.redhat.com/RabbitMQ
+
+### SUPER HACK OF DEATH ###
+
+cat > /etc/yum.repos.d/epel6.repo << EOF
+[epel]
+name=Extra Packages for Enterprise Linux 6 - $basearch
+mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=epel-6&arch=\$basearch
+failovermethod=priority
+enabled=1
+gpgcheck=0
+EOF
+
+yum clean all
+yum -y update
+yum -y install rabbitmq-server
+
+service rabbitmq-server start && service rabbitmq-server stop
+
+chkconfig rabbitmq-server off
+
+rhos4-rabbitmq1
+
+cp /var/lib/rabbitmq/.erlang.cookie /srv/rhos/configs/rabbitmq_erlang_cookie
+
+rhos4-rabbitmq2|rhos4-rabbitmq3|rhos4-rabbitmq4
+
+cat /srv/rhos/configs/rabbitmq_erlang_cookie > /var/lib/rabbitmq/.erlang.cookie
+
+rhos4-rabbitmq1|rhos4-rabbitmq2|rhos4-rabbitmq3|rhos4-rabbitmq4:
+
+chkconfig pacemaker on
+pcs cluster setup --name rhos4-rabbitmq rhos4-rabbitmq1 rhos4-rabbitmq2 rhos4-rabbitmq3 rhos4-rabbitmq4
+pcs cluster start
+
+sleep 30
+
+pcs stonith create rabbitmq1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos4-rabbitmq1
+
+pcs stonith create rabbitmq2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos4-rabbitmq2
+
+pcs stonith create rabbitmq3-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos4-rabbitmq3
+
+pcs stonith create rabbitmq4-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos4-rabbitmq4
+
+pcs resource create rabbitmq-server lsb:rabbitmq-server --clone
+
+rhos4-rabbitmq2|rhos4-rabbitmq3|rhos4-rabbitmq4
+
+# all 3 nodes must be stopped first
+rabbitmqctl stop_app
+
+# make them join _one_ at a time
+rabbitmqctl join_cluster rabbit@rhos4-rabbitmq1
+
+# start _one_ at a tiime only after they are part of the rabbitmq cluster
+rabbitmqctl start_app
+
+rhos4-rabbitmq1
+
+rabbitmqctl set_policy HA '^(?!amq\.).*' '{"ha-mode": "all"}'
+
+rhos4-rabbitmq1|rhos4-rabbitmq2|rhos4-rabbitmq3|rhos4-rabbitmq4:
+
+# TEST
+rabbitmqctl cluster_status
+rabbitmqctl list_policies
+
