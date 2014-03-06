@@ -164,7 +164,7 @@ backend ceilometer-vms
 frontend vip-rabbitmq
     bind 192.168.16.213:5672
     default_backend rabbitmq-vms
-backend ceilometer-vms
+backend rabbitmq-vms
     balance roundrobin
     server rhos4-rabbitmq1 192.168.16.49:5672 check inter 1s
     server rhos4-rabbitmq2 192.168.16.50:5672 check inter 1s
