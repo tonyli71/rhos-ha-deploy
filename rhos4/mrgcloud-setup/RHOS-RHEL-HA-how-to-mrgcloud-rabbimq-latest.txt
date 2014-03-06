@@ -54,7 +54,7 @@ rhos4-rabbitmq2|rhos4-rabbitmq3|rhos4-rabbitmq4
 rabbitmqctl stop_app
 
 # make them join _one_ at a time
-rabbitmqctl join_cluster rabbit@rhos4-rabbitmq1
+rabbitmqctl join_cluster rabbit@rhos4-rabbitmq1 --ram
 
 # start _one_ at a tiime only after they are part of the rabbitmq cluster
 rabbitmqctl start_app

@@ -10,8 +10,7 @@ http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-mysql
 rhos4-qpid1|rhos4-qpid2:
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-qpid
 
-(UNSUPPORTED)
-rhos4-rabbitmq1|rhos4-rabbitmq2|rhos4-rabbitmq3|rhos4-rabbitmq4:
+(UNSUPPORTED) rhos4-rabbitmq1|rhos4-rabbitmq2|rhos4-rabbitmq3|rhos4-rabbitmq4:
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rabbimq
 
 rhos4-keystone1|rhos4-keystone2:
@@ -58,17 +57,7 @@ http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-computenode
 
 RANDOM NOTES FOLLOW:
 
-https://github.com/fabbione/rhos-ha-deploy
-
-Current DC: mrg-04 - partition with quorum
-^^^
-
-Online: [ rhos4-lb1 rhos4-lb2 ]
-^^^^
-
 # TODO:
-rabbitmq testing:
-use rohara how to
 mysql check for all services:
 openstack-config --set /etc/cinder/cinder.conf DEFAULT max_retries -1
 openstack-config --set /etc/cinder/cinder.conf DEFAULT retry_interval 1
