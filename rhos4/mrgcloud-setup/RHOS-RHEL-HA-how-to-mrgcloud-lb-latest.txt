@@ -163,9 +163,11 @@ backend ceilometer-vms
 # add nagios here
 frontend vip-rabbitmq
     bind 192.168.16.213:5672
+    timeout client 90s
     default_backend rabbitmq-vms
 backend rabbitmq-vms
     balance roundrobin
+    timeout server 90s
     server rhos4-rabbitmq1 192.168.16.49:5672 check inter 1s
     server rhos4-rabbitmq2 192.168.16.50:5672 check inter 1s
     server rhos4-rabbitmq3 192.168.16.51:5672 check inter 1s
