@@ -18,7 +18,7 @@ openstack-config --set /etc/neutron/neutron.conf keystone_authtoken admin_passwo
 openstack-config --set /etc/neutron/neutron.conf DEFAULT rpc_backend neutron.openstack.common.rpc.impl_qpid
 openstack-config --set /etc/neutron/neutron.conf DEFAULT qpid_hostname vip-qpid
 openstack-config --set /etc/neutron/neutron.conf DEFAULT qpid_heartbeat 2
-openstack-config --set /etc/neutron/neutron.conf database connection mysql://neutron:neutrontest@vip-mysql:3306/neutron
+openstack-config --set /etc/neutron/neutron.conf database connection mysql://neutron:neutrontest@vip-mysql:3306/ovs_neutron
 openstack-config    --set /etc/neutron/neutron.conf DEFAULT  core_plugin     neutron.plugins.openvswitch.ovs_neutron_plugin.OVSNeutronPluginV2
 
 ln -s /etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini /etc/neutron/plugin.ini
