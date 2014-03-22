@@ -12,5 +12,5 @@ pcs stonith create memcache1-fence fence_xvm multicast_address=225.0.0.7 pcmk_ho
 
 pcs stonith create memcache2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos4-memcache2
 
-pcs resource create keystone lsb:memcached --clone
+pcs resource create memcached lsb:memcached --clone
 
