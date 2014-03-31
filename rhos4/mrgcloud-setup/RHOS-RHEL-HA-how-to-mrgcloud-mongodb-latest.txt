@@ -30,6 +30,7 @@ pcs resource cleanup mongodb
 # Setup replica
 rhos4-mongodb1:
 
+rm -f /root/mongo_replica_setup.js
 cat > /root/mongo_replica_setup.js << EOF
 rs.initiate()
 sleep(10000)
@@ -39,7 +40,6 @@ rs.add("rhos4-mongodb3.vmnet.mpc.lab.eng.bos.redhat.com");
 rs.add("rhos4-mongodb4.vmnet.mpc.lab.eng.bos.redhat.com");
 EOF
 
-rm -f /root/mongo_replica_setup.js
 mongo /root/mongo_replica_setup.js
 
 # Allow for primary election and sync of replica set

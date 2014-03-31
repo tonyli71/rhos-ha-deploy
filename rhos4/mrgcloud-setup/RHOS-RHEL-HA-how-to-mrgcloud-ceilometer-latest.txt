@@ -23,6 +23,9 @@ openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT os_password ceilo
 
 openstack-config --set  /etc/ceilometer/ceilometer.conf database connection  mongodb://rhos4-mongodb1,rhos4-mongodb2,rhos4-mongodb3,rhos4-mongodb4:27017/ceilometer?replicaSet=ceilometer
 
+# keep last 5 days data only (value is in secs)
+openstack-config --set  /etc/ceilometer/ceilometer.conf database time_to_live 432000
+
 rhos4-ceilometer1:
 
 . /srv/rhos/configs/keystonerc_admin
