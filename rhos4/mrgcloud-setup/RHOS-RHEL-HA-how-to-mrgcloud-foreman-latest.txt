@@ -1,0 +1,58 @@
+# fabio´s notes on deploy / testing foreman. does not make forman HA yet.
+
+
+yum -y install openstack-foreman-installer git
+
+cd /srv
+
+git clone https://github.com/redhat-openstack/astapor.git
+
+git clone https://github.com/radez/puppet-pacemaker.git
+
+git clone https://github.com/dprince/puppet-qpid.git
+
+rm -rf /usr/share/packstack/modules/pacemaker /usr/share/packstack/modules/qpid
+
+mv puppet-pacemaker /usr/share/packstack/modules/pacemaker
+
+mv puppet-qpid /usr/share/packstack/modules/qpid
+
+cd /srv/astapor/bin
+
+export FOREMAN_GATEWAY=false 
+export FOREMAN_PROVISIONING=false 
+
+bash -x foreman_server.sh
+
+You'll find Foreman at https://rhos4-foreman.vmnet.mpc.lab.eng.bos.redhat.com
++ echo 'The user name is '\''admin'\'' and default password is '\''changeme'\''.'
+The user name is 'admin' and default password is 'changeme'.
+++ hostname
++ echo 'Please change the password at https://rhos4-foreman.vmnet.mpc.lab.eng.bos.redhat.com/users/1-admin/edit'
+Please change the password at https://rhos4-foreman.vmnet.mpc.lab.eng.bos.redhat.com/users/1-admin/edit
++ echo ''
+
++ echo 'Then you need to alter a few parameters in Foreman.'
+Then you need to alter a few parameters in Foreman.
+++ hostname
++ echo 'Visit: https://rhos4-foreman.vmnet.mpc.lab.eng.bos.redhat.com/hostgroups'
+Visit: https://rhos4-foreman.vmnet.mpc.lab.eng.bos.redhat.com/hostgroups
++ echo 'From this list, click on each class that you plan to use'
+From this list, click on each class that you plan to use
++ echo 'Go to the Smart Class Parameters tab and work though each of the parameters'
+Go to the Smart Class Parameters tab and work though each of the parameters
++ echo 'in the left-hand column'
+in the left-hand column
++ echo ''
+
++ echo 'Then copy /tmp/foreman_client.sh to your openstack client nodes'
+Then copy /tmp/foreman_client.sh to your openstack client nodes
++ echo 'Run that script and visit the HOSTS tab in foreman. Pick some'
+Run that script and visit the HOSTS tab in foreman. Pick some
++ echo 'host groups for your nodes based on the configuration you prefer'
+host groups for your nodes based on the configuration you prefer
++ echo ''
+
++ echo 'Once puppet runs on the machines, OpenStack is ready!'
+Once puppet runs on the machines, OpenStack is ready!
+

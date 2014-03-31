@@ -1,6 +1,9 @@
 Baremetal nodes setup:
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-baremetal
 
+rhos4-foreman (WIP DEATH TO WEB UIs!!!! MUAHAHAHAHAH):
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-foreman
+
 rhos4-lb1|rhos4-lb2:
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-lb
 
