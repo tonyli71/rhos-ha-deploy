@@ -61,7 +61,6 @@ IPV6INIT=yes
 IPV6_AUTOCONF=yes
 EOF
 
-
 cat > /etc/sysconfig/network-scripts/ifcfg-vmnet0 << EOF
 DEVICE=vmnet0
 TYPE=Bridge
@@ -147,12 +146,6 @@ defaults
     timeout connect 90s
     timeout client 90s
     timeout server 90s
-frontend vip-foreman-ext
-    bind 10.16.144.34:443
-    default_backend vip-foreman-int
-backend vip-foreman-int
-    balance roundrobin
-    server vip-foreman 192.168.16.100:443 check inter 10s
 frontend vip-horizon-ext
     bind 10.16.144.34:80
     default_backend vip-horizon-int
@@ -192,7 +185,7 @@ EOF
 cat > /etc/named/192.168.16.arpa << EOF
 $TTL    86400
 @       IN      SOA     mrg-01. fdinitto.redhat.com.  (
-                                      2014032602 ; Serial
+                                      2014040201 ; Serial
                                       21600      ; Refresh
                                       10800      ; Retry
                                       1209600    ; Expire
@@ -252,8 +245,6 @@ $TTL    86400
 51      IN      PTR     rhos4-rabbitmq3.vmnet.mpc.lab.eng.bos.redhat.com.
 52      IN      PTR     rhos4-rabbitmq4.vmnet.mpc.lab.eng.bos.redhat.com.
 
-100     IN      PTR     rhos4-foreman.vmnet.mpc.lab.eng.bos.redhat.com.
-
 200     IN      PTR     vip-mysql.vmnet.mpc.lab.eng.bos.redhat.com.
 201     IN      PTR     vip-qpid.vmnet.mpc.lab.eng.bos.redhat.com.
 202     IN      PTR     vip-keystone.vmnet.mpc.lab.eng.bos.redhat.com.
@@ -288,7 +279,7 @@ EOF
 cat > /etc/named/vmnet.mpc.lab.eng.bos.redhat.com << EOF
 $TTL    86400
 @       IN      SOA     mrg-01. fdinitto.redhat.com. (
-                                2014032602 ; serial
+                                2014040201 ; serial
                                 21600      ; refresh (24 hours)
                                 10800      ; retry (2 hours)
                                 1209600    ; expire (1000 hours)
@@ -354,8 +345,6 @@ rhos4-rabbitmq1         IN      A       192.168.16.49
 rhos4-rabbitmq2         IN      A       192.168.16.50
 rhos4-rabbitmq3         IN      A       192.168.16.51
 rhos4-rabbitmq4         IN      A       192.168.16.52
-
-rhos4-foreman           IN      A       192.168.16.100
 
 vip-mysql       IN      A       192.168.16.200
 vip-qpid        IN      A       192.168.16.201
@@ -426,10 +415,6 @@ subnet 192.168.16.0 netmask 255.255.255.0 {
 host rhos4-base {
   hardware ethernet 54:52:00:00:01:01;
   fixed-address rhos4-base.vmnet.mpc.lab.eng.bos.redhat.com;
-}
-host rhos4-foreman {
-  hardware ethernet 54:52:00:00:01:02;
-  fixed-address rhos4-foreman.vmnet.mpc.lab.eng.bos.redhat.com;
 }
 host rhos4-lb1 {
   hardware ethernet 54:52:00:07:01:01;
@@ -665,9 +650,6 @@ cp /srv/vms/rhos4-base.img /localvms/
 
 mrg01:
 virsh define /srv/vms/rhos4-base.xml
-qemu-img create -b /srv/vms/rhos4-base.img -f qcow2 /srv/vms/rhos4-foreman.cow
-virsh define /srv/vms/rhos4-foreman.xml
-virsh start rhos4-foreman
 
 mrg07:
 
