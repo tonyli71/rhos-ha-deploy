@@ -25,12 +25,14 @@ backend mysql-vms
     server rhos4-mysql2 192.168.16.14:3306 check inter 1s
 frontend vip-qpid
     bind 192.168.16.201:5672
+    timeout client 120s
     default_backend qpid-vms
 backend qpid-vms
 # comment stick-table out
 # and add balance roundrobin for A/A cluster mode in qpid
     stick-table type ip size 2
     stick on dst
+    timeout server 120s
     server rhos4-qpid1 192.168.16.15:5672 check inter 1s
     server rhos4-qpid2 192.168.16.16:5672 check inter 1s
 frontend vip-keystone-admin

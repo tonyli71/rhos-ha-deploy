@@ -10,7 +10,6 @@ openstack-config --set /etc/nova/nova.conf DEFAULT sql_connection mysql://nova:n
 openstack-config --set /etc/nova/nova.conf DEFAULT auth_strategy keystone
 openstack-config --set /etc/nova/nova.conf DEFAULT rpc_backend nova.openstack.common.rpc.impl_qpid
 openstack-config --set /etc/nova/nova.conf DEFAULT qpid_hostname vip-qpid
-openstack-config --set /etc/nova/nova.conf DEFAULT qpid_heartbeat 2
 openstack-config --set /etc/nova/nova.conf DEFAULT metadata_host vip-nova
 openstack-config --set /etc/nova/nova.conf DEFAULT metadata_listen 0.0.0.0
 openstack-config --set /etc/nova/nova.conf DEFAULT metadata_listen_port 8775

@@ -12,7 +12,6 @@ openstack-config --set /etc/glance/glance-api.conf keystone_authtoken admin_tena
 openstack-config --set /etc/glance/glance-api.conf keystone_authtoken admin_user glance
 openstack-config --set /etc/glance/glance-api.conf keystone_authtoken admin_password glancetest
 openstack-config --set /etc/glance/glance-api.conf DEFAULT qpid_hostname vip-qpid
-openstack-config --set /etc/glance/glance-api.conf DEFAULT qpid_heartbeat 2
 openstack-config --set /etc/glance/glance-api.conf DEFAULT registry_host vip-glance
 
 

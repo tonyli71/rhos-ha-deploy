@@ -11,7 +11,6 @@ openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken admin_
 openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken memcached_servers rhos4-memcache1:11211,rhos4-memcache2:11211
 
 openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT qpid_hostname vip-qpid
-openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT qpid_heartbeat 2
 
 openstack-config --set /etc/ceilometer/ceilometer.conf publisher_rpc metering_secret ceilometersecret
 openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT os_auth_url http://vip-keystone:35357/v2.0

@@ -8,7 +8,6 @@ openstack-config --set /etc/cinder/cinder.conf keystone_authtoken admin_user cin
 openstack-config --set /etc/cinder/cinder.conf keystone_authtoken admin_password cindertest
 openstack-config --set /etc/cinder/cinder.conf DEFAULT rpc_backend cinder.openstack.common.rpc.impl_qpid
 openstack-config --set /etc/cinder/cinder.conf DEFAULT qpid_hostname vip-qpid
-openstack-config --set /etc/cinder/cinder.conf DEFAULT qpid_heartbeat 2
 openstack-config --set /etc/cinder/cinder.conf DEFAULT sql_connection mysql://cinder:cindertest@vip-mysql/cinder
 openstack-config --set /etc/cinder/cinder.conf DEFAULT max_retries -1
 openstack-config --set /etc/cinder/cinder.conf DEFAULT retry_interval 1

@@ -55,7 +55,6 @@ openstack-config --set /etc/nova/nova.conf DEFAULT sql_connection mysql://nova:n
 openstack-config --set /etc/nova/nova.conf DEFAULT auth_strategy keystone
 openstack-config --set /etc/nova/nova.conf DEFAULT rpc_backend nova.openstack.common.rpc.impl_qpid
 openstack-config --set /etc/nova/nova.conf DEFAULT qpid_hostname vip-qpid
-openstack-config --set /etc/nova/nova.conf DEFAULT qpid_heartbeat 2
 openstack-config --set /etc/nova/nova.conf DEFAULT metadata_host vip-nova
 openstack-config --set /etc/nova/nova.conf DEFAULT metadata_listen 0.0.0.0
 openstack-config --set /etc/nova/nova.conf DEFAULT metadata_listen_port 8775
@@ -84,7 +83,6 @@ openstack-config --set /etc/neutron/neutron.conf keystone_authtoken admin_user n
 openstack-config --set /etc/neutron/neutron.conf keystone_authtoken admin_password neutrontest
 openstack-config --set /etc/neutron/neutron.conf DEFAULT rpc_backend neutron.openstack.common.rpc.impl_qpid
 openstack-config --set /etc/neutron/neutron.conf DEFAULT qpid_hostname vip-qpid
-openstack-config --set /etc/neutron/neutron.conf DEFAULT qpid_heartbeat 2
 openstack-config --set /etc/neutron/neutron.conf database connection mysql://neutron:neutrontest@vip-mysql:3306/ovs_neutron
 openstack-config      --set /etc/neutron/neutron.conf DEFAULT  core_plugin       neutron.plugins.openvswitch.ovs_neutron_plugin.OVSNeutronPluginV2
 
@@ -113,7 +111,6 @@ openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken admin_
 openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken admin_password ceilometertest
 openstack-config  --set /etc/ceilometer/ceilometer.conf keystone_authtoken  memcached_servers rhos4-memcache1:11211,rhos4-memcache2:11211
 openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT qpid_hostname vip-qpid
-openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT qpid_heartbeat 2
 openstack-config --set /etc/ceilometer/ceilometer.conf publisher_rpc metering_secret ceilometersecret
 openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT os_auth_url http://vip-keystone:35357/v2.0
 openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT os_username ceilometer

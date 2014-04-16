@@ -16,7 +16,6 @@ openstack-config --set /etc/heat/heat.conf DEFAULT heat_metadata_server_url vip-
 openstack-config --set /etc/heat/heat.conf DEFAULT heat_waitcondition_server_url vip-heat:8000/v1/waitcondition
 openstack-config --set /etc/heat/heat.conf DEFAULT heat_watch_server_url vip-heat:8003
 openstack-config --set /etc/heat/heat.conf DEFAULT qpid_hostname vip-qpid
-openstack-config --set /etc/heat/heat.conf DEFAULT qpid_heartbeat 2
 
 . /srv/rhos/configs/keystonerc_admin
 keystone user-create --name=heat --pass=heattest
