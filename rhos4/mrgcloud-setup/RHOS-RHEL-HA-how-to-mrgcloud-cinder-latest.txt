@@ -13,7 +13,7 @@ openstack-config --set /etc/cinder/cinder.conf DEFAULT max_retries -1
 openstack-config --set /etc/cinder/cinder.conf DEFAULT retry_interval 1
 openstack-config --set /etc/cinder/cinder.conf DEFAULT glance_host vip-glance
 openstack-config --set /etc/cinder/cinder.conf keystone_authtoken memcached_servers rhos4-memcache1:11211,rhos4-memcache2:11211
-New Label
+
 mkdir -p /srv/rhos/cinder
 cat > /etc/cinder/nfs_exports << EOF
 mrg-01:/srv/rhos/cinder
@@ -46,7 +46,7 @@ CREATE DATABASE cinder;
 GRANT ALL ON cinder.* TO 'cinder'@'%' IDENTIFIED BY 'cindertest';
 FLUSH PRIVILEGES;
 quit
-New Label
+
 su cinder -s /bin/sh -c "cinder-manage db sync"
 
 rhos4-cinder1|rhos4-cinder2

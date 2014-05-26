@@ -9,9 +9,9 @@ qpidd.conf:
 
 cat > /etc/qpidd.conf << EOF
 port=5672
-max-connections=6
+max-connections=65534
 worker-threads=17
-connection-backlog=10
+connection-backlog=65534
 auth=no
 realm=QPID
 EOF
