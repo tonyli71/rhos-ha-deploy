@@ -1,4 +1,4 @@
-mrg-01|02|03|04|07|08
+mrg-01|07|08|09
 
 public visible ip addresses:
 mrg-vip76.mpc.lab.eng.bos.redhat.com
@@ -603,17 +603,7 @@ mkdir -p /srv
 echo "192.168.16.1:/srv       /srv                    nfs     defaults,v3     0 0" >> /etc/fstab
 mount -a
 
-mrg-02 (daily backup):
-
-cat > /etc/cron.daily/rhos-backup << EOF
-\#!/bin/bash
-mkdir -p /backup
-rsync -av --quiet /srv/* /backup/
-EOF
-
-chmod 755 /etc/cron.daily/rhos-backup
-
-mrg-07|08 (vm nodes):
+mrg-07|08|09 (vm nodes):
 
 yum install -y fence-virtd fence-virtd-multicast fence-virtd-libvirt
 

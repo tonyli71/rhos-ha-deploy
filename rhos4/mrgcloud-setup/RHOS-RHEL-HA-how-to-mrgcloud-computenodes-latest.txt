@@ -21,10 +21,7 @@ to make it into the formal documentation or at the least kbases
 
 ## RATIONALE ##
 
-mrg-03||mrg-04
-
-### SUPER HACK OF DEATH ###
-wget -O /etc/yum.repos.d/ajo.repo http://file.rdu.redhat.com/~majopela/neutron-ha-fixes-repo/neutron_ha_fix.repo
+mrg-02|mrg-03||mrg-04
 
 yum install -y openstack-nova-compute openstack-utils python-cinder openstack-neutron-openvswitch openstack-ceilometer-compute
 
@@ -145,6 +142,5 @@ pcs constraint order start messagebus then libvirtd
 pcs constraint order start libvirtd then ceilometer-compute
 pcs constraint order start ceilometer-compute then nova-compute
 
-========= ADD IT HERE =========
 
 

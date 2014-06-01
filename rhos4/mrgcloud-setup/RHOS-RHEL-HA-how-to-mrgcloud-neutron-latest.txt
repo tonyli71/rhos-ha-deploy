@@ -1,8 +1,5 @@
 rhos4-neutron1|rhos4-neutron2:
 
-### SUPER HACK OF DEATH ###
-wget -O /etc/yum.repos.d/ajo.repo http://file.rdu.redhat.com/~majopela/neutron-ha-fixes-repo/neutron_ha_fix.repo
-
 yum install -y openstack-neutron openstack-neutron-openvswitch openstack-utils openstack-selinux
 
 openstack-config --set /etc/neutron/api-paste.ini filter:authtoken auth_host vip-keystone
