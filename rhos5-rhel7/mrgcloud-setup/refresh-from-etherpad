@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -e
+
+commitmsg="$@"
+
+srclist=RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7
+
+wget -O $srclist-latest.txt \
+	"http://rhel-ha.etherpad.corp.redhat.com/ep/pad/export/$srclist/latest?format=txt"
+
+howtolist="$(grep http: $srclist-latest.txt | sed -e 's#.*/RHOS#RHOS#g')"
+
+for i in $howtolist; do
+	wget -O $i-latest.txt "http://rhel-ha.etherpad.corp.redhat.com/ep/pad/export/$i/latest?format=txt"
+done
+
+today="$(date)"
+
+git add *
+[ -z "$commitmsg" ] && commitmsg="Automatic etherpad sync at $today"
+git commit -a -m "$commitmsg"
+git push

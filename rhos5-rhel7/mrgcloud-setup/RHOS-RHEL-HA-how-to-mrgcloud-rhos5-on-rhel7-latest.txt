@@ -1,0 +1,3 @@
+Baremetal nodes setup:
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-baremetal
+
