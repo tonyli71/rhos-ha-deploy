@@ -185,7 +185,7 @@ EOF
 cat > /etc/named/192.168.16.arpa << EOF
 $TTL    86400
 @       IN      SOA     mrg-01. fdinitto.redhat.com.  (
-                                      2014040201 ; Serial
+                                      2014040202 ; Serial
                                       21600      ; Refresh
                                       10800      ; Retry
                                       1209600    ; Expire
@@ -245,6 +245,25 @@ $TTL    86400
 51      IN      PTR     rhos4-rabbitmq3.vmnet.mpc.lab.eng.bos.redhat.com.
 52      IN      PTR     rhos4-rabbitmq4.vmnet.mpc.lab.eng.bos.redhat.com.
 
+53      IN      PTR     rhos5-rhel7-base.vmnet.mpc.lab.eng.bos.redhat.com.
+54      IN      PTR     rhos5-rhel6-base.vmnet.mpc.lab.eng.bos.redhat.com.
+
+55      IN      PTR     rhos5-lb1.vmnet.mpc.lab.eng.bos.redhat.com.
+56      IN      PTR     rhos5-lb2.vmnet.mpc.lab.eng.bos.redhat.com.
+57      IN      PTR     rhos5-lb3.vmnet.mpc.lab.eng.bos.redhat.com.
+58      IN      PTR     rhos5-db1.vmnet.mpc.lab.eng.bos.redhat.com.
+59      IN      PTR     rhos5-db2.vmnet.mpc.lab.eng.bos.redhat.com.
+60      IN      PTR     rhos5-db3.vmnet.mpc.lab.eng.bos.redhat.com.
+61      IN      PTR     rhos5-rabbitmq1.vmnet.mpc.lab.eng.bos.redhat.com.
+62      IN      PTR     rhos5-rabbitmq2.vmnet.mpc.lab.eng.bos.redhat.com.
+63      IN      PTR     rhos5-rabbitmq3.vmnet.mpc.lab.eng.bos.redhat.com.
+64      IN      PTR     rhos5-keystone1.vmnet.mpc.lab.eng.bos.redhat.com.
+65      IN      PTR     rhos5-keystone2.vmnet.mpc.lab.eng.bos.redhat.com.
+66      IN      PTR     rhos5-keystone3.vmnet.mpc.lab.eng.bos.redhat.com.
+67      IN      PTR     rhos5-memcache1.vmnet.mpc.lab.eng.bos.redhat.com.
+68      IN      PTR     rhos5-memcache2.vmnet.mpc.lab.eng.bos.redhat.com.
+69      IN      PTR     rhos5-memcache3.vmnet.mpc.lab.eng.bos.redhat.com.
+
 200     IN      PTR     vip-mysql.vmnet.mpc.lab.eng.bos.redhat.com.
 201     IN      PTR     vip-qpid.vmnet.mpc.lab.eng.bos.redhat.com.
 202     IN      PTR     vip-keystone.vmnet.mpc.lab.eng.bos.redhat.com.
@@ -279,7 +298,7 @@ EOF
 cat > /etc/named/vmnet.mpc.lab.eng.bos.redhat.com << EOF
 $TTL    86400
 @       IN      SOA     mrg-01. fdinitto.redhat.com. (
-                                2014040201 ; serial
+                                2014060201 ; serial
                                 21600      ; refresh (24 hours)
                                 10800      ; retry (2 hours)
                                 1209600    ; expire (1000 hours)
@@ -345,6 +364,25 @@ rhos4-rabbitmq1         IN      A       192.168.16.49
 rhos4-rabbitmq2         IN      A       192.168.16.50
 rhos4-rabbitmq3         IN      A       192.168.16.51
 rhos4-rabbitmq4         IN      A       192.168.16.52
+
+rhos5-rhel7-base        IN      A       192.168.16.53
+rhos5-rhel6-base        IN      A       192.168.16.54
+
+rhos5-lb1               IN      A       192.168.16.55
+rhos5-lb2               IN      A       192.168.16.56
+rhos5-lb3               IN      A       192.168.16.57
+rhos5-db1               IN      A       192.168.16.58
+rhos5-db2               IN      A       192.168.16.59
+rhos5-db3               IN      A       192.168.16.60
+rhos5-rabbitmq1         IN      A       192.168.16.61
+rhos5-rabbitmq2         IN      A       192.168.16.62
+rhos5-rabbitmq3         IN      A       192.168.16.63
+rhos5-keystone1         IN      A       192.168.16.64
+rhos5-keystone2         IN      A       192.168.16.65
+rhos5-keystone3         IN      A       192.168.16.66
+rhos5-memcache1         IN      A       192.168.16.67
+rhos5-memcache2         IN      A       192.168.16.68
+rhos5-memcache3         IN      A       192.168.16.69
 
 vip-mysql       IN      A       192.168.16.200
 vip-qpid        IN      A       192.168.16.201
@@ -584,6 +622,10 @@ host rhos4-rabbitmq4 {
   hardware ethernet 54:52:00:08:01:15;
   fixed-address rhos4-rabbitmq4.vmnet.mpc.lab.eng.bos.redhat.com;
 }
+host rhos5-rhel7-base {
+  hardware ethernet 54:52:00:00:01:02;
+  fixed-address rhos5-rhel7-base.vmnet.mpc.lab.eng.bos.redhat.com;
+}
 EOF
 
 chkconfig dhcpd on
@@ -640,136 +682,5 @@ cp /srv/vms/rhos4-base.img /localvms/
 
 mrg01:
 virsh define /srv/vms/rhos4-base.xml
-
-mrg07:
-
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-lb1.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-mysql1.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-qpid1.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-keystone1.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-memcache1.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-glance1.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-cinder1.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-swift1.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-swift-brick1.cow
-truncate --size=10G /localvms/rhos4-swift-brick1_data.img
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-swift-brick3.cow
-truncate --size=10G /localvms/rhos4-swift-brick3_data.img
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-neutron1.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-neutron-n1.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-nova1.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-horizon1.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-heat1.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-mongodb1.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-mongodb3.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-ceilometer1.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-rabbitmq1.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-rabbitmq3.cow
-
-virsh define /srv/vms/rhos4-lb1.xml
-virsh start rhos4-lb1
-virsh define /srv/vms/rhos4-mysql1.xml
-virsh start rhos4-mysql1
-virsh define /srv/vms/rhos4-qpid1.xml
-virsh start rhos4-qpid1
-virsh define /srv/vms/rhos4-keystone1.xml
-virsh start rhos4-keystone1
-virsh define /srv/vms/rhos4-memcache1.xml
-virsh start rhos4-memcache1
-virsh define /srv/vms/rhos4-glance1.xml
-virsh start rhos4-glance1
-virsh define /srv/vms/rhos4-cinder1.xml
-virsh start rhos4-cinder1
-virsh define /srv/vms/rhos4-swift1.xml
-virsh start rhos4-swift1
-virsh define /srv/vms/rhos4-swift-brick1.xml
-virsh start rhos4-swift-brick1
-virsh define /srv/vms/rhos4-swift-brick3.xml
-virsh start rhos4-swift-brick3
-virsh define /srv/vms/rhos4-neutron1.xml
-virsh start rhos4-neutron1
-virsh define /srv/vms/rhos4-neutron-n1.xml
-virsh start rhos4-neutron-n1
-virsh define /srv/vms/rhos4-nova1.xml
-virsh start rhos4-nova1
-virsh define /srv/vms/rhos4-horizon1.xml
-virsh start rhos4-horizon1
-virsh define /srv/vms/rhos4-heat1.xml
-virsh start rhos4-heat1
-virsh define /srv/vms/rhos4-mongodb1.xml
-virsh start rhos4-mongodb1
-virsh define /srv/vms/rhos4-mongodb3.xml
-virsh start rhos4-mongodb3
-virsh define /srv/vms/rhos4-ceilometer1.xml
-virsh start rhos4-ceilometer1
-virsh define /srv/vms/rhos4-rabbitmq1.xml
-virsh start rhos4-rabbitmq1
-virsh define /srv/vms/rhos4-rabbitmq3.xml
-virsh start rhos4-rabbitmq3
-
-mrg08:
-
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-lb2.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-mysql2.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-qpid2.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-keystone2.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-memcache2.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-glance2.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-cinder2.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-swift2.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-swift-brick2.cow
-truncate --size=10G /localvms/rhos4-swift-brick2_data.img
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-swift-brick4.cow
-truncate --size=10G /localvms/rhos4-swift-brick4_data.img
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-neutron2.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-neutron-n2.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-nova2.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-horizon2.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-heat2.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-mongodb2.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-mongodb4.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-ceilometer2.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-rabbitmq2.cow
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-rabbitmq4.cow
-
-virsh define /srv/vms/rhos4-lb2.xml
-virsh start rhos4-lb2
-virsh define /srv/vms/rhos4-mysql2.xml 
-virsh start rhos4-mysql2
-virsh define /srv/vms/rhos4-qpid2.xml
-virsh start rhos4-qpid2
-virsh define /srv/vms/rhos4-keystone2.xml
-virsh start rhos4-keystone2
-virsh define /srv/vms/rhos4-memcache2.xml
-virsh start rhos4-memcache2
-virsh define /srv/vms/rhos4-glance2.xml
-virsh start rhos4-glance2
-virsh define /srv/vms/rhos4-cinder2.xml
-virsh start rhos4-cinder2
-virsh define /srv/vms/rhos4-swift2.xml
-virsh start rhos4-swift2
-virsh define /srv/vms/rhos4-swift-brick2.xml
-virsh start rhos4-swift-brick2
-virsh define /srv/vms/rhos4-swift-brick4.xml
-virsh start rhos4-swift-brick4
-virsh define /srv/vms/rhos4-neutron2.xml
-virsh start rhos4-neutron2
-virsh define /srv/vms/rhos4-neutron-n2.xml
-virsh start rhos4-neutron-n2
-virsh define /srv/vms/rhos4-nova2.xml
-virsh start rhos4-nova2
-virsh define /srv/vms/rhos4-horizon2.xml
-virsh start rhos4-horizon2
-virsh define /srv/vms/rhos4-heat2.xml
-virsh start rhos4-heat2
-virsh define /srv/vms/rhos4-mongodb2.xml
-virsh start rhos4-mongodb2
-virsh define /srv/vms/rhos4-mongodb4.xml
-virsh start rhos4-mongodb4
-virsh define /srv/vms/rhos4-ceilometer2.xml
-virsh start rhos4-ceilometer2
-virsh define /srv/vms/rhos4-rabbitmq2.xml
-virsh start rhos4-rabbitmq2
-virsh define /srv/vms/rhos4-rabbitmq4.xml
-virsh start rhos4-rabbitmq4
+virsh define /srv/rhos5-rhel7-vms/rhos5-rhel7-base.xml
 

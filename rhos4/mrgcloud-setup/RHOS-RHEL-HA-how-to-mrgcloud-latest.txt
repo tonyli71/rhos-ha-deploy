@@ -3,6 +3,9 @@
 Baremetal nodes setup:
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-baremetal
 
+VM definition on mrg-07|mrg-08
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-vmsetup
+
 rhos4-lb1|rhos4-lb2:
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-lb
 
