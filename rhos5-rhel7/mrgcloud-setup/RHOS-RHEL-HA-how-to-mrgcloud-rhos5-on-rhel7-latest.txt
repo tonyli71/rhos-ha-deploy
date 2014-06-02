@@ -1,3 +1,9 @@
+* DISCLAIMER: ALL THOSE ETHERPADS ARE READONLY *
+
 Baremetal nodes setup:
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-baremetal
+
+VM definition on mrg-07|mrg-08|mrg-09
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-vmsetup
+
 
