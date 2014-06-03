@@ -1,14 +1,21 @@
-mrg07:
-
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-lb1.cow
-
 qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-swift-brick1.cow
 truncate --size=10G /localvms/rhos4-swift-brick1_data.img
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-swift-brick3.cow
-truncate --size=10G /localvms/rhos4-swift-brick3_data.img
 
-virsh define /srv/vms/rhos4-lb1.xml
-virsh start rhos4-lb1
-.....
+mrg07:
 
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-lb1.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-lb1.xml
+virsh start rhos5-lb1
+
+mrg08:
+
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-lb2.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-lb2.xml
+virsh start rhos5-lb2
+
+mrg09:
+
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-lb3.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-lb3.xml
+virsh start rhos5-lb3
 

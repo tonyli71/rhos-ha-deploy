@@ -111,8 +111,6 @@ echo "echo 1 > /sys/class/net/ext0/bridge/multicast_querier" >> /etc/rc.local
 echo "echo 1 > /sys/class/net/vmnet0/bridge/multicast_querier" >> /etc/rc.local
 /etc/rc.local
 
-service libvirtd start
-virsh net-destroy default
 
 umount /home
 sed -i -e 's#.*home.*##g' /etc/fstab 
@@ -626,6 +624,18 @@ host rhos5-rhel7-base {
   hardware ethernet 54:52:00:00:01:02;
   fixed-address rhos5-rhel7-base.vmnet.mpc.lab.eng.bos.redhat.com;
 }
+host rhos5-lb1 {
+  hardware ethernet 54:52:00:07:01:16;
+  fixed-address rhos5-lb1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-lb2 {
+  hardware ethernet 54:52:00:08:01:16;
+  fixed-address rhos5-lb2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-lb3 {
+  hardware ethernet 54:52:00:09:01:16;
+  fixed-address rhos5-lb3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
 EOF
 
 chkconfig dhcpd on
@@ -679,6 +689,7 @@ service fence_virtd start
 
 mkdir -p /localvms
 cp /srv/vms/rhos4-base.img /localvms/
+cp /srv/rhos5-rhel7-vms/rhos5-rhel7-base.img /localvms/
 
 mrg01:
 virsh define /srv/vms/rhos4-base.xml
