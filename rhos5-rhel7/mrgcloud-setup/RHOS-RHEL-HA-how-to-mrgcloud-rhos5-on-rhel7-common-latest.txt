@@ -1,0 +1,112 @@
+<!DOCTYPE html PUBLIC
+	  "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+  <head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+    <meta http-equiv="Content-Language" content="en-us" />
+    
+    <title>Red Hat Etherpad: Sign In</title>
+    <base href="http://rhel-ha.etherpad.corp.redhat.com/" />
+
+    <!-- CSS -->
+    <link href="/static/compressed/d8572aad6ef9c2e761062aa6ca03fd51.css" rel="stylesheet" type="text/css" />
+
+    
+
+    <!-- javascript -->
+
+    <script type="text/javascript">
+  // <![CDATA[
+var clientVars = {"hooks":{}};
+  // ]]>
+</script>
+    <script type="text/javascript" src="/static/compressed/c4d0eabd7f95c64029ee87b13f0ef496.js"></script>
+    
+
+  </head>
+
+  <body id="framedpagebody" class="pro-body">
+
+    
+
+<div id="container">
+
+
+  <div style="height: 140px;">&nbsp;</div>
+
+
+
+
+
+
+
+
+
+
+<div class="fpcontent">
+  <div class="account-container">
+
+  <div id="signin-notice">Guests are not allowed to join that pad. &nbsp;Please sign in.</div
+>
+
+  <form id="signin-form" action="/ep/account/sign-in?cont=http%3a%2f%2frhel-ha.etherpad.corp.redhat.com%2fep%2fpad%2fexport%2fRHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-common%2flatest%3f%26format%3dtxt" method="post">
+  <div class="bb bb-signin">
+    <div class="bb-top">
+      <div class="bb-topleft"><!-- --></div>
+      <div class="bb-topright"><!-- --></div>
+      <div class="bb-title">Sign In to RHEL-HA Red Hat Etherpad</div>
+    </div>
+    <div class="bb-in">
+      
+      <div>
+        <label for="email" id="email-label">Email</label>
+        <input class="textin" type="text" name="email" id="email" value="" />
+        <div style="clear: both;"><!-- --></div>
+      </div>
+
+      <div>
+        <label for="password" id="password-label">Password</label>
+        <input class="passin" type="password" name="password"
+        id="password"
+        value="" />
+        <div style="clear: both;"><!-- --></div>
+      </div>
+
+      <div>
+        <input type="checkbox" id="rememberMe" name="rememberMe"
+           />
+        <label for="rememberMe" id="rememberMe-label">Remember me on this
+        computer</label>
+
+        <button type="submit" class="bluebutton bluebutton120" id="signInButton">
+          Sign In
+        </button>
+        <div style="clear: both;"><!-- --></div>
+      </div>
+
+    </div>
+  </div>
+  </form>
+
+  
+
+  <div id="bottom-text">
+      <a
+      href="/ep/account/forgot-password">Recover lost
+      password</a>
+  </div>
+
+  </div>
+</div>
+
+ 
+
+</div>
+
+ 
+
+  </body>
+</html>
+ 

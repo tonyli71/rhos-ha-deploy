@@ -6,6 +6,9 @@ http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-baremetal
 VM definition on mrg-07|mrg-08|mrg-09
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-vmsetup
 
+common cluster packages setup (IMPORTANT!!!!)
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-common
+
 rhos5-lb1|rhos5-lb2|rhos5-lb3
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-lb
 
