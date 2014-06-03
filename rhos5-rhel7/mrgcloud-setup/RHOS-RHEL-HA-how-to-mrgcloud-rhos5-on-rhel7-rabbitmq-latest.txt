@@ -1,0 +1,62 @@
+rhos5-rabbitmq1|rhos5-rabbitmq2|rhos5-rabbitmq3:
+ 
+yum -y install rabbitmq-server
+
+systemctl start rabbitmq-server
+systemctl stop rabbitmq-server
+
+rhos5-rabbitmq1:
+cp /var/lib/rabbitmq/.erlang.cookie /srv/rhos5/configs/rabbitmq_erlang_cookie
+
+rhos5-rabbitmq2|rhos5-rabbitmq3:
+cat /srv/rhos5/configs/rabbitmq_erlang_cookie > /var/lib/rabbitmq/.erlang.cookie
+
+rhos5-rabbitmq1|rhos5-rabbitmq2|rhos5-rabbitmq3:
+
+systemctl enable pcsd
+systemctl start pcsd
+systemctl enable pacemaker
+
+pcs cluster auth rhos5-rabbitmq1 rhos5-rabbitmq2 rhos5-rabbitmq3 -u hacluster -p cluster --force
+
+rhos5-rabbimq1:
+
+pcs cluster setup --name rhos5-rabbitmq rhos5-rabbitmq1 rhos5-rabbitmq2 rhos5-rabbitmq3
+pcs cluster start --all
+
+sleep 30
+
+pcs stonith create lb1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos5-rabbitmq1
+pcs stonith create lb2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-rabbitmq2
+pcs stonith create lb3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-rabbitmq3
+
+# THE USUAL WTF
+# use A/P:
+pcs resource create rabbitmq-server systemd:rabbitmq-server op monitor start-delay=20s
+
+# till https://bugzilla.redhat.com/show_bug.cgi?id=1104193 is fixed
+
+# you can ignore anything below this for now
+pcs resource create rabbitmq-server systemd:rabbitmq-server op monitor start-delay=20s --clone
+
+rhos5-rabbitmq2|rhos5-rabbitmq3:
+
+# all 2 nodes must be stopped first
+rabbitmqctl stop_app
+
+# make them join _one_ at a time
+rabbitmqctl join_cluster rabbit@rhos5-rabbitmq1
+
+# start _one_ at a tiime only after they are part of the rabbitmq cluster
+rabbitmqctl start_app
+
+rhos5-rabbitmq1
+
+rabbitmqctl set_policy HA '^(?!amq\.).*' '{"ha-mode": "all"}'
+
+rhos5-rabbitmq1|rhos5-rabbitmq2|rhos5-rabbitmq3:
+
+# TEST
+rabbitmqctl cluster_status
+rabbitmqctl list_policies
+

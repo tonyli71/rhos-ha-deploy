@@ -1,0 +1,42 @@
+# WARNING #
+# I am temporary using mariadb/mysql because i did not have time to sync
+# with Ryan for Galera.
+
+rhos5-db1|rhos5-db2|rhos5-db3:
+
+yum install -y mariadb mariadb-server nfs-utils
+
+mkdir -p /srv/rhos5/db
+
+systemctl enable pcsd
+systemctl start pcsd
+systemctl enable pacemaker
+
+pcs cluster auth rhos5-db1 rhos5-db2 rhos5-db3 -u hacluster -p cluster --force
+
+rhos5-db1:
+
+pcs cluster setup --name rhos5-db rhos5-db1 rhos5-db2 rhos5-db3
+pcs cluster start --all
+
+sleep 30
+
+pcs stonith create db1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos5-db1
+pcs stonith create db2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-db2
+pcs stonith create db3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-db3
+
+pcs   resource create  db-fs Filesystem device="mrg-01:/srv/rhos5/db"   directory="/var/lib/mysql"  fstype="nfs" options="v3" --group db-group
+
+# On the node running mysql:
+
+cp /etc/my.cnf /var/lib/mysql/
+
+pcs resource create maria-db mysql config=/var/lib/mysql/my.cnf enable_creation=1 op start timeout=120s --group db-group
+
+mysql mysql
+drop user ''@'rhos5-db1.vmnet.mpc.lab.eng.bos.redhat.com';
+drop user 'root'@'rhos5-db1.vmnet.mpc.lab.eng.bos.redhat.com';
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED by 'mysqltest' WITH GRANT OPTION;
+flush privileges;
+quit
+

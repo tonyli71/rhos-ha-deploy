@@ -12,3 +12,10 @@ http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rh
 rhos5-lb1|rhos5-lb2|rhos5-lb3
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-lb
 
+rhos5-db1|rhos5-db2|rhos5-db3
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-db
+
+rhos5-rabbitmq1|rhos5-rabbitmq2|rhos5-rabbitmq3
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-rabbitmq
+
+

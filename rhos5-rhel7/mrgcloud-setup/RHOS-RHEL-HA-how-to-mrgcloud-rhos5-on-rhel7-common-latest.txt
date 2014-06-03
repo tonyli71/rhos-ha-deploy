@@ -16,8 +16,16 @@ systemctl enable pacemaker
 # set a password for hacluster user. password should be the same on all nodes
 passwd hacluster
 
+# I SET THE PASSWORD TO: cluster
+# use a safer one
+
 # autheticate nodes (example from rhos5-lb cluster)
-pcs cluster auth rhos5-lb1 rhos5-lb2 rhos5-lb3
+# the -p option is used to give the password on command line and make it easier to script
+# this is the same passwd you set few lines above
+# let see how many are going to ask about it
+# cause you know.. i write notes for fun :)
+
+pcs cluster auth rhos5-lb1 rhos5-lb2 rhos5-lb3 -u hacluster -p cluster --force
 
 # FROM THIS POINT ON YOU CAN EXECUTE PCS COMMANDS ON ONE SINGLE NODE!
 

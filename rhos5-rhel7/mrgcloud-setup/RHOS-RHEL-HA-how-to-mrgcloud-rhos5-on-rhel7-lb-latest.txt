@@ -59,7 +59,11 @@ backend keystone-public-vms
 
 EOF
 
-pcs cluster auth rhos5-lb1 rhos5-lb2 rhos5-lb3
+systemctl enable pcsd
+systemctl start pcsd
+systemctl enable pacemaker
+
+pcs cluster auth rhos5-lb1 rhos5-lb2 rhos5-lb3 -u hacluster -p cluster --force
 
 rhos5-lb1:
 
@@ -72,7 +76,7 @@ pcs stonith create lb1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_lis
 pcs stonith create lb2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-lb2
 pcs stonith create lb3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-lb3
 
-pcs resource create lb-haproxy systemd:haproxy --clone
+pcs resource create lb-haproxy systemd:haproxy op monitor start-delay=10s --clone
 
 pcs resource create vip-db IPaddr2 ip=192.168.16.200
 pcs resource create vip-rabbitmq IPaddr2 ip=192.168.16.213

@@ -6,16 +6,34 @@ mrg07:
 qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-lb1.cow
 virsh define /srv/rhos5-rhel7-vms/rhos5-lb1.xml
 virsh start rhos5-lb1
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-db1.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-db1.xml
+virsh start rhos5-db1
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-rabbitmq1.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-rabbitmq1.xml
+virsh start rhos5-rabbitmq1
 
 mrg08:
 
 qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-lb2.cow
 virsh define /srv/rhos5-rhel7-vms/rhos5-lb2.xml
 virsh start rhos5-lb2
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-db2.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-db2.xml
+virsh start rhos5-db2
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-rabbitmq2.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-rabbitmq2.xml
+virsh start rhos5-rabbitmq2
 
 mrg09:
 
 qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-lb3.cow
 virsh define /srv/rhos5-rhel7-vms/rhos5-lb3.xml
 virsh start rhos5-lb3
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-db3.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-db3.xml
+virsh start rhos5-db3
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-rabbitmq3.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-rabbitmq3.xml
+virsh start rhos5-rabbitmq3
 
