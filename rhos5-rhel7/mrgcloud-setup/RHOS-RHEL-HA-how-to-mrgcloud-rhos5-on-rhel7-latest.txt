@@ -18,4 +18,9 @@ http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rh
 rhos5-rabbitmq1|rhos5-rabbitmq2|rhos5-rabbitmq3
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-rabbitmq
 
+rhos5-keystone1|rhos5-keystone2|rhos5-keystone3
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-keystone
+
+rhos5-memcache1|rhos5-memcache2|rhos5-memcache3
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-memcache
 

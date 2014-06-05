@@ -660,6 +660,31 @@ host rhos5-rabbitmq3 {
   hardware ethernet 54:52:00:09:01:18;
   fixed-address rhos5-rabbitmq3.vmnet.mpc.lab.eng.bos.redhat.com;
 }
+host rhos5-keystone1 {
+  hardware ethernet 54:52:00:07:01:19;
+  fixed-address rhos5-keystone1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-keystone2 {
+  hardware ethernet 54:52:00:08:01:19;
+  fixed-address rhos5-keystone2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-keystone3 {
+  hardware ethernet 54:52:00:09:01:19;
+  fixed-address rhos5-keystone3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-memcache1 {
+  hardware ethernet 54:52:00:07:01:1a;
+  fixed-address rhos5-memcache1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-memcache2 {
+  hardware ethernet 54:52:00:08:01:1a;
+  fixed-address rhos5-memcache2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-memcache3 {
+  hardware ethernet 54:52:00:09:01:1a;
+  fixed-address rhos5-memcache3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+
 EOF
 
 chkconfig dhcpd on

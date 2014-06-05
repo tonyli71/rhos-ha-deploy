@@ -1,0 +1,23 @@
+rhos5-memcache1|rhos5-memcache2|rhos5-memcache3
+
+yum install -y memcached
+
+systemctl enable pcsd
+systemctl start pcsd
+systemctl enable pacemaker
+
+pcs cluster auth rhos5-memcache1 rhos5-memcache2 rhos5-memcache3 -u hacluster -p cluster --force
+
+rhos5-memcache1:
+
+pcs cluster setup --name rhos5-memcache rhos5-memcache1 rhos5-memcache2 rhos5-memcache3
+pcs cluster start --all
+
+sleep 30
+
+pcs stonith create memcache1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos5-memcache1
+pcs stonith create memcache2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-memcache2
+pcs stonith create memcache3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-memcache3
+
+pcs resource create memcached systemd:memcached --clone
+

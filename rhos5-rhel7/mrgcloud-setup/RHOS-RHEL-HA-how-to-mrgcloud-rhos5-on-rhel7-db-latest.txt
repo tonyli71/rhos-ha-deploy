@@ -38,5 +38,15 @@ drop user ''@'rhos5-db1.vmnet.mpc.lab.eng.bos.redhat.com';
 drop user 'root'@'rhos5-db1.vmnet.mpc.lab.eng.bos.redhat.com';
 GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED by 'mysqltest' WITH GRANT OPTION;
 flush privileges;
+SET GLOBAL max_connect_errors=10000000000;
+quit
+mysqladmin flush-hosts
+
+# create all various users:
+
+mysql --user=root --password=mysqltest --host=vip-mysql
+CREATE DATABASE keystone;
+GRANT ALL ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'keystonetest';
+FLUSH PRIVILEGES;
 quit
 

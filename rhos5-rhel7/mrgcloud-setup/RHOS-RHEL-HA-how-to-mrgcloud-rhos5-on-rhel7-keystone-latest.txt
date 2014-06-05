@@ -1,0 +1,101 @@
+rhos5-keystone1|rhos5-keystone2|rhos5-keystone3
+
+yum install -y openstack-keystone openstack-utils openstack-selinux
+
+rhos5-keystone1
+
+export SERVICE_TOKEN=$(openssl rand -hex 10)
+echo $SERVICE_TOKEN > /srv/rhos5/configs/ks_admin_token
+
+rhos4-keystone2|rhos5-keystone3
+
+export SERVICE_TOKEN=$(cat /srv/rhos5/configs/ks_admin_token)
+
+rhos5-keystone1|rhos5-keystone2|rhos5-keystone3
+
+openstack-config --set /etc/keystone/keystone.conf DEFAULT admin_token $SERVICE_TOKEN
+openstack-config --set /etc/keystone/keystone.conf DEFAULT rabbit_host vip-rabbitmq
+
+openstack-config --set /etc/keystone/keystone.conf DEFAULT admin_endpoint 'http://vip-keystone:%(admin_port)s/'
+openstack-config --set /etc/keystone/keystone.conf DEFAULT public_endpoint 'http://vip-keystone:%(public_port)s/'
+
+openstack-config --set /etc/keystone/keystone.conf database connection mysql://keystone:keystonetest@vip-mysql/keystone
+openstack-config --set /etc/keystone/keystone.conf database max_retries -1
+
+rhos5-keystone1
+
+keystone-manage pki_setup --keystone-user keystone --keystone-group keystone
+chown -R keystone:keystone /var/log/keystone    /etc/keystone/ssl/
+su keystone -s /bin/sh -c "keystone-manage db_sync"
+
+cd /etc/keystone/ssl
+tar cvp -f /srv/rhos5/configs/keystone_ssl.tar *
+
+rhos5-keystone2|rhos5-keystone3
+
+mkdir -p /etc/keystone/ssl
+cd /etc/keystone/ssl
+tar xvp -f /srv/rhos5/configs/keystone_ssl.tar
+chown -R keystone:keystone /var/log/keystone    /etc/keystone/ssl/
+
+rhos5-keystone1|rhos5-keystone2|rhos5-keystone3
+
+systemctl enable pcsd
+systemctl start pcsd
+systemctl enable pacemaker
+
+pcs cluster auth rhos5-keystone1 rhos5-keystone2 rhos5-keystone3 -u hacluster -p cluster --force
+
+rhos5-keystone1:
+
+pcs cluster setup --name rhos5-keystone rhos5-keystone1 rhos5-keystone2 rhos5-keystone3
+pcs cluster start --all
+
+sleep 30
+
+pcs stonith create keystone1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos5-keystone1
+pcs stonith create keystone2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-keystone2
+pcs stonith create keystone3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-keystone3
+
+pcs resource create keystone systemd:openstack-keystone op monitor start-delay=10s --clone
+
+export SERVICE_ENDPOINT="http://vip-keystone:35357/v2.0"
+
+keystone service-create --name=keystone --type=identity --description="Keystone Identity Service"
+
+keystone endpoint-create --service keystone --publicurl 'http://vip-keystone:5000/v2.0' --adminurl 'http://vip-keystone:35357/v2.0' --internalurl 'http://vip-keystone:5000/v2.0'
+
+keystone user-create --name admin --pass keystonetest
+keystone role-create --name admin
+keystone tenant-create --name admin
+keystone user-role-add --user admin --role admin --tenant admin
+
+cat > /srv/rhos5/configs/keystonerc_admin << EOF
+export OS_USERNAME=admin
+export OS_TENANT_NAME=admin
+export OS_PASSWORD=keystonetest
+export OS_AUTH_URL=http://vip-keystone:35357/v2.0/
+export PS1='[\u@\h \W(keystone_admin)]\$ '
+EOF
+
+keystone user-create --name fabbione --pass fabbionetest
+keystone role-create --name Member
+keystone tenant-create --name TENANT
+keystone user-role-add --user fabbione --role Member --tenant TENANT
+
+cat > /srv/rhos5/configs/keystonerc_user << EOF
+export OS_USERNAME=fabbione
+export OS_TENANT_NAME=TENANT
+export OS_PASSWORD=fabbionetest
+export OS_AUTH_URL=http://vip-keystone:5000/v2.0/
+export PS1='[\u@\h \W(keystone_user)]\$ '
+EOF
+
+keystone tenant-create --name services --description "Services Tenant"
+
+# TEST
+. /srv/rhos5/configs/keystonerc_user
+keystone token-get
+. /srv/rhos5/configs/keystonerc_admin
+keystone user-list
+
