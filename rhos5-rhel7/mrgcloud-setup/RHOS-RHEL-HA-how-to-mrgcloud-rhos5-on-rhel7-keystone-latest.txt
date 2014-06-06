@@ -93,6 +93,15 @@ EOF
 
 keystone tenant-create --name services --description "Services Tenant"
 
+# glance
+keystone user-create --name glance --pass glancetest
+keystone  user-role-add --user glance --role admin --tenant services
+keystone service-create --name glance --type image --description "Glance Image Service"
+
+keystone endpoint-create --service glance --publicurl "http://vip-glance:9292" --adminurl "http://vip-glance:9292" --internalurl "http://vip-glance:9292"
+
+# others
+
 # TEST
 . /srv/rhos5/configs/keystonerc_user
 keystone token-get

@@ -2,4 +2,120 @@ rhos5-glance1|rhos5-glance2|rhos5-glance3
 
 yum install -y openstack-glance openstack-utils openstack-selinux
 
+openstack-config --set /etc/glance/glance-api.conf database connection mysql://glance:glancetest@vip-mysql/glance
+openstack-config --set /etc/glance/glance-api.conf database max_retries -1
+
+# workaround for https://bugzilla.redhat.com/show_bug.cgi?id=1094675
+openstack-config --set /etc/glance/glance-api.conf DEFAULT db_enforce_mysql_charset False
+
+openstack-config --set /etc/glance/glance-api.conf paste_deploy flavor keystone
+openstack-config --set /etc/glance/glance-api.conf keystone_authtoken auth_host vip-keystone
+openstack-config --set /etc/glance/glance-api.conf keystone_authtoken auth_port 35357
+openstack-config --set /etc/glance/glance-api.conf keystone_authtoken auth_protocol http
+openstack-config --set /etc/glance/glance-api.conf keystone_authtoken admin_tenant_name services
+openstack-config --set /etc/glance/glance-api.conf keystone_authtoken admin_user glance
+openstack-config --set /etc/glance/glance-api.conf keystone_authtoken admin_password glancetest
+
+openstack-config --set /etc/glance/glance-api.conf DEFAULT notifier_driver messaging
+openstack-config --set /etc/glance/glance-api.conf DEFAULT rabbit_host vip-rabbitmq
+
+#rabbit_durable_queues=False ?
+# default_publisher_id = image.localhost ?
+
+openstack-config --set /etc/glance/glance-api.conf DEFAULT registry_host vip-glance
+
+openstack-config --set /etc/glance/glance-registry.conf database connection mysql://glance:glancetest@vip-mysql/glance
+openstack-config --set /etc/glance/glance-registry.conf database max_retries -1
+openstack-config --set /etc/glance/glance-registry.conf paste_deploy flavor keystone
+openstack-config --set /etc/glance/glance-registry.conf keystone_authtoken auth_host vip-keystone
+openstack-config --set /etc/glance/glance-registry.conf keystone_authtoken auth_port 35357
+openstack-config --set /etc/glance/glance-registry.conf keystone_authtoken auth_protocol http
+openstack-config --set /etc/glance/glance-registry.conf keystone_authtoken admin_tenant_name services
+openstack-config --set /etc/glance/glance-registry.conf keystone_authtoken admin_user glance
+openstack-config --set /etc/glance/glance-registry.conf keystone_authtoken admin_password glancetest
+
+rhos5-glance1
+
+mkdir -p /srv/rhos5/glance
+su glance -s /bin/sh -c "glance-manage db_sync"
+
+rhos5-glance1|rhos5-glance2|rhos5-glance3
+
+systemctl enable pcsd
+systemctl start pcsd
+
+pcs cluster auth rhos5-glance1 rhos5-glance2 rhos5-glance3 -u hacluster -p cluster --force
+
+rhos5-db1:
+
+pcs cluster setup --name rhos5-glance rhos5-glance1 rhos5-glance2 rhos5-glance3
+pcs cluster enable --all
+pcs cluster start --all
+
+sleep 30
+
+pcs stonith create glance1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos5-glance1
+pcs stonith create glance2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-glance2
+pcs stonith create glance3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-glance3
+
+pcs resource create glance-fs Filesystem device="mrg-01:/srv/rhos5/glance"   directory="/var/lib/glance" fstype="nfs" options="v3" --clone
+
+chown glance:nobody /var/lib/glance
+
+pcs resource create glance-registry systemd:openstack-glance-registry --clone
+pcs resource create glance-api systemd:openstack-glance-api --clone
+
+pcs constraint order start glance-fs-clone then glance-registry-clone
+pcs constraint colocation add glance-registry with glance-fs
+pcs constraint order start glance-registry-clone then glance-api-clone
+pcs constraint colocation add glance-api with glance-registry
+
+# TEST
+. /srv/rhos5/configs/keystonerc_admin
+
+glance image-create --name "RHEL 6.5" --is-public true --disk-format qcow2  --container-format bare --location http://download.devel.redhat.com/brewroot/packages/rhel-guest-image/6.5/20140603.0/images/rhel-guest-image-6.5-20140603.0.x86_64.qcow2
+
+glance image-create --name "RHEL 7.0" --is-public true --disk-format qcow2  --container-format bare --location http://download.devel.redhat.com/brewroot/packages/rhel-guest-image/7.0/20140506.1/images/rhel-guest-image-7.0-20140506.1.x86_64.qcow2
+
+glance image-create --name "cirros" --is-public true --disk-format qcow2  --container-format bare --location http://download.cirros-cloud.net/0.3.2/cirros-0.3.2-x86_64-disk.img
+
+glance image-list
+
+# OUTPUT
+
+[root@rhos5-glance2 ~]# pcs status
+Cluster name: rhos5-glance
+Last updated: Fri Jun  6 10:33:05 2014
+Last change: Fri Jun  6 10:32:51 2014 via cibadmin on rhos5-glance1
+Stack: corosync
+Current DC: rhos5-glance3 (3) - partition with quorum
+Version: 1.1.10-29.el7-368c726
+3 Nodes configured
+12 Resources configured
+
+
+Online: [ rhos5-glance1 rhos5-glance2 rhos5-glance3 ]
+
+Full list of resources:
+
+ glance1-fence  (stonith:fence_xvm):    Started rhos5-glance1 
+ glance2-fence  (stonith:fence_xvm):    Started rhos5-glance2 
+ glance3-fence  (stonith:fence_xvm):    Started rhos5-glance3 
+ Clone Set: glance-fs-clone [glance-fs]
+     Started: [ rhos5-glance1 rhos5-glance2 rhos5-glance3 ]
+ Clone Set: glance-registry-clone [glance-registry]
+     Started: [ rhos5-glance1 rhos5-glance2 rhos5-glance3 ]
+ Clone Set: glance-api-clone [glance-api]
+     Started: [ rhos5-glance1 rhos5-glance2 rhos5-glance3 ]
+
+PCSD Status:
+  rhos5-glance1: Online
+  rhos5-glance2: Online
+  rhos5-glance3: Online
+
+Daemon Status:
+  corosync: active/enabled
+  pacemaker: active/enabled
+  pcsd: active/enabled
+
 

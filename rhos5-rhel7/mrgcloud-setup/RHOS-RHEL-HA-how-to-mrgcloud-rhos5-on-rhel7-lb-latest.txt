@@ -55,6 +55,24 @@ backend keystone-public-vms
     server rhos5-keystone2 192.168.16.65:5000 check inter 1s
     server rhos5-keystone3 192.168.16.66:5000 check inter 1s
 
+frontend  vip-glance-api
+    bind 192.168.16.203:9191
+    default_backend glance-api-vms
+backend glance-api-vms
+    balance roundrobin
+    server rhos5-glance1 192.168.16.70:9191 check inter 1s
+    server rhos5-glance2 192.168.16.71:9191 check inter 1s
+    server rhos5-glance3 192.168.16.72:9191 check inter 1s
+
+frontend vip-glance-registry
+    bind 192.168.16.203:9292
+    default_backend glance-registry-vms
+backend glance-registry-vms
+    balance roundrobin
+    server rhos5-glance1 192.168.16.70:9292 check inter 1s
+    server rhos5-glance2 192.168.16.71:9292 check inter 1s
+    server rhos5-glance3 192.168.16.72:9292 check inter 1s
+
 # ADD SERVICES AS WE GO HERE
 
 EOF

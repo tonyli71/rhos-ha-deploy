@@ -47,6 +47,8 @@ mysqladmin flush-hosts
 mysql --user=root --password=mysqltest --host=vip-mysql
 CREATE DATABASE keystone;
 GRANT ALL ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'keystonetest';
+CREATE DATABASE glance;
+GRANT ALL ON glance.* TO 'glance'@'%' IDENTIFIED BY 'glancetest';
 FLUSH PRIVILEGES;
 quit
 
