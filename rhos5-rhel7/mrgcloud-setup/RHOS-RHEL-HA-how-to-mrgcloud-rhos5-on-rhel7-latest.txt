@@ -30,3 +30,6 @@ http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rh
 rhos5-cinder1|rhos5-cinder2|rhos5-cinder3
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-cinder
 
+rhos5-swift-brickX  (brick nodes, single node clusters)
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-swift-brick
+

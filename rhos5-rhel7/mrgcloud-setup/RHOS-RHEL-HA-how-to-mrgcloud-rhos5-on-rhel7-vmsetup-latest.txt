@@ -24,6 +24,10 @@ virsh start rhos5-glance1
 qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-cinder1.cow
 virsh define /srv/rhos5-rhel7-vms/rhos5-cinder1.xml
 virsh start rhos5-cinder1
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-swift-brick1.cow
+truncate --size=10G /localvms/rhos5-swift-brick1_data.img
+virsh define /srv/rhos5-rhel7-vms/rhos5-swift-brick1.xml
+virsh start rhos5-swift-brick1
 
 mrg08:
 
@@ -48,6 +52,10 @@ virsh start rhos5-glance2
 qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-cinder2.cow
 virsh define /srv/rhos5-rhel7-vms/rhos5-cinder2.xml
 virsh start rhos5-cinder2
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-swift-brick2.cow
+truncate --size=10G /localvms/rhos5-swift-brick2_data.img
+virsh define /srv/rhos5-rhel7-vms/rhos5-swift-brick2.xml
+virsh start rhos5-swift-brick2
 
 mrg09:
 
@@ -72,4 +80,8 @@ virsh start rhos5-glance3
 qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-cinder3.cow
 virsh define /srv/rhos5-rhel7-vms/rhos5-cinder3.xml
 virsh start rhos5-cinder3
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-swift-brick3.cow
+truncate --size=10G /localvms/rhos5-swift-brick3_data.img
+virsh define /srv/rhos5-rhel7-vms/rhos5-swift-brick3.xml
+virsh start rhos5-swift-brick3
 
