@@ -42,13 +42,13 @@ rhos5-keystone1|rhos5-keystone2|rhos5-keystone3
 
 systemctl enable pcsd
 systemctl start pcsd
-systemctl enable pacemaker
 
 pcs cluster auth rhos5-keystone1 rhos5-keystone2 rhos5-keystone3 -u hacluster -p cluster --force
 
 rhos5-keystone1:
 
 pcs cluster setup --name rhos5-keystone rhos5-keystone1 rhos5-keystone2 rhos5-keystone3
+pcs cluster enable --all
 pcs cluster start --all
 
 sleep 30

@@ -61,13 +61,13 @@ EOF
 
 systemctl enable pcsd
 systemctl start pcsd
-systemctl enable pacemaker
 
 pcs cluster auth rhos5-lb1 rhos5-lb2 rhos5-lb3 -u hacluster -p cluster --force
 
 rhos5-lb1:
 
 pcs cluster setup --name rhos5-lb rhos5-lb1 rhos5-lb2 rhos5-lb3
+pcs cluster enable --all
 pcs cluster start --all
 
 sleep 30

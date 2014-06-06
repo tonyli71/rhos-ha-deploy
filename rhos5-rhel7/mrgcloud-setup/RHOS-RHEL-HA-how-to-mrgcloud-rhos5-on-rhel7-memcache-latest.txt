@@ -10,6 +10,7 @@ pcs cluster auth rhos5-memcache1 rhos5-memcache2 rhos5-memcache3 -u hacluster -p
 
 rhos5-memcache1:
 
+pcs cluster enable --all
 pcs cluster setup --name rhos5-memcache rhos5-memcache1 rhos5-memcache2 rhos5-memcache3
 pcs cluster start --all
 
@@ -19,5 +20,5 @@ pcs stonith create memcache1-fence fence_xvm multicast_address=225.0.0.7 pcmk_ho
 pcs stonith create memcache2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-memcache2
 pcs stonith create memcache3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-memcache3
 
-pcs resource create memcached systemd:memcached --clone
+pcs resource create memcached systemd:memcached op monitor start-delay=10s --clone
 

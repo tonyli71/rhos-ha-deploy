@@ -15,13 +15,13 @@ rhos5-rabbitmq1|rhos5-rabbitmq2|rhos5-rabbitmq3:
 
 systemctl enable pcsd
 systemctl start pcsd
-systemctl enable pacemaker
 
 pcs cluster auth rhos5-rabbitmq1 rhos5-rabbitmq2 rhos5-rabbitmq3 -u hacluster -p cluster --force
 
 rhos5-rabbimq1:
 
 pcs cluster setup --name rhos5-rabbitmq rhos5-rabbitmq1 rhos5-rabbitmq2 rhos5-rabbitmq3
+pcs cluster enable --all
 pcs cluster start --all
 
 sleep 30

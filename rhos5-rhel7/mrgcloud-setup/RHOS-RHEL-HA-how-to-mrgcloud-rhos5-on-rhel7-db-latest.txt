@@ -10,13 +10,13 @@ mkdir -p /srv/rhos5/db
 
 systemctl enable pcsd
 systemctl start pcsd
-systemctl enable pacemaker
 
 pcs cluster auth rhos5-db1 rhos5-db2 rhos5-db3 -u hacluster -p cluster --force
 
 rhos5-db1:
 
 pcs cluster setup --name rhos5-db rhos5-db1 rhos5-db2 rhos5-db3
+pcs cluster enable --all
 pcs cluster start --all
 
 sleep 30
