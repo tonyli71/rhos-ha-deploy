@@ -60,10 +60,11 @@ pcs stonith create glance3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host
 
 pcs resource create glance-fs Filesystem device="mrg-01:/srv/rhos5/glance"   directory="/var/lib/glance" fstype="nfs" options="v3" --clone
 
+# wait for glance-fs to be started and running
 chown glance:nobody /var/lib/glance
 
-pcs resource create glance-registry systemd:openstack-glance-registry --clone
-pcs resource create glance-api systemd:openstack-glance-api --clone
+pcs resource create glance-registry systemd:openstack-glance-registry op monitor start-delay=10s --clone
+pcs resource create glance-api systemd:openstack-glance-api op monitor start-delay=10s --clone
 
 pcs constraint order start glance-fs-clone then glance-registry-clone
 pcs constraint colocation add glance-registry with glance-fs
