@@ -105,6 +105,12 @@ keystone user-role-add --user cinder --role admin --tenant services
 keystone service-create --name cinder --type volume --description "Cinder Volume Service"
 keystone endpoint-create --service cinder --publicurl "http://vip-cinder:8776/v1/\$(tenant_id)s" --adminurl "http://vip-cinder:8776/v1/\$(tenant_id)s" --internalurl "http://vip-cinder:8776/v1/\$(tenant_id)s"
 
+# swift
+keystone user-create --name swift --pass swifttest
+keystone user-role-add --user swift --role admin --tenant services
+keystone service-create --name swift --type object-store --description "Swift Storage Service"
+keystone endpoint-create --service swift --publicurl "http://vip-swift:8080/v1/AUTH_\$(tenant_id)s" --adminurl "http://vip-swift:8080/v1" --internalurl "http://vip-swift:8080/v1/AUTH_\$(tenant_id)s"
+
 # others
 
 # TEST

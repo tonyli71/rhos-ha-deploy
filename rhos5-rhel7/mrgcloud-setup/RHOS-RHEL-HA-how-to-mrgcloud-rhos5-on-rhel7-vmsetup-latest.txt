@@ -28,6 +28,9 @@ qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-swift
 truncate --size=10G /localvms/rhos5-swift-brick1_data.img
 virsh define /srv/rhos5-rhel7-vms/rhos5-swift-brick1.xml
 virsh start rhos5-swift-brick1
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-swift1.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-swift1.xml
+virsh start rhos5-swift1
 
 mrg08:
 
@@ -56,6 +59,9 @@ qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-swift
 truncate --size=10G /localvms/rhos5-swift-brick2_data.img
 virsh define /srv/rhos5-rhel7-vms/rhos5-swift-brick2.xml
 virsh start rhos5-swift-brick2
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-swift2.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-swift2.xml
+virsh start rhos5-swift2
 
 mrg09:
 
@@ -84,4 +90,7 @@ qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-swift
 truncate --size=10G /localvms/rhos5-swift-brick3_data.img
 virsh define /srv/rhos5-rhel7-vms/rhos5-swift-brick3.xml
 virsh start rhos5-swift-brick3
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-swift3.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-swift3.xml
+virsh start rhos5-swift3
 

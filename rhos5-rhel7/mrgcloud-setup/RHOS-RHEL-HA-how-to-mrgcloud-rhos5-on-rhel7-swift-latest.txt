@@ -1,0 +1,100 @@
+rhos5-swift1|rhos5-swift2|rhos5-swift3
+
+yum  install -y openstack-swift-proxy openstack-utils
+
+rhos5-swift1
+
+openstack-config --set /etc/swift/swift.conf swift-hash swift_hash_path_prefix $(openssl rand -hex 10)
+openstack-config --set /etc/swift/swift.conf swift-hash swift_hash_path_suffix $(openssl rand -hex 10)
+
+# ceilometer hook
+cat >> /etc/swift/swift.conf << EOF
+[filter:ceilometer]
+use = egg:ceilometer#swift
+[pipeline:main]
+pipeline = healthcheck cache authtoken keystoneauth proxy-server ceilometer
+EOF
+
+openstack-config --set /etc/swift/proxy-server.conf filter:authtoken auth_host vip-keystone
+openstack-config --set /etc/swift/proxy-server.conf filter:authtoken admin_tenant_name services
+openstack-config --set /etc/swift/proxy-server.conf filter:authtoken admin_user swift
+openstack-config --set /etc/swift/proxy-server.conf filter:authtoken admin_password swifttest
+openstack-config --set /etc/swift/proxy-server.conf filter:cache memcache_servers rhos5-memcache1:11211,rhos5-memcache2:11211,rhos5-memcache3:11211
+
+openstack-config --set /etc/swift/object-expirer.conf filter:cache memcache_servers rhos5-memcache1:11211,rhos5-memcache2:11211,rhos5-memcache3:11211
+openstack-config --set /etc/swift/object-expirer.conf object-expirer concurrency 100
+
+swift-ring-builder /etc/swift/object.builder create 16 3 24
+swift-ring-builder /etc/swift/container.builder create 16 3 24
+swift-ring-builder /etc/swift/account.builder create 16 3 24
+
+swift-ring-builder /etc/swift/account.builder add z1-192.168.16.76:6002/vdb 10
+swift-ring-builder /etc/swift/container.builder add z1-192.168.16.76:6001/vdb 10
+swift-ring-builder /etc/swift/object.builder add z1-192.168.16.76:6000/vdb 10
+
+swift-ring-builder /etc/swift/account.builder add z2-192.168.16.77:6002/vdb 10
+swift-ring-builder /etc/swift/container.builder add z2-192.168.16.77:6001/vdb 10
+swift-ring-builder /etc/swift/object.builder add z2-192.168.16.77:6000/vdb 10
+
+swift-ring-builder /etc/swift/account.builder add z3-192.168.16.78:6002/vdb 10
+swift-ring-builder /etc/swift/container.builder add z3-192.168.16.78:6001/vdb 10
+swift-ring-builder /etc/swift/object.builder add z3-192.168.16.78:6000/vdb 10
+
+swift-ring-builder /etc/swift/account.builder rebalance
+swift-ring-builder /etc/swift/container.builder rebalance
+swift-ring-builder /etc/swift/object.builder rebalance
+
+cd /etc/swift
+tar cvp -f /srv/rhos5/configs/swift_configs.tar *
+
+rhos5-swift2|rhos5-swift3
+
+rm -rf /etc/swift
+mkdir -p /etc/swift
+cd /etc/swift
+tar xvp -f /srv/rhos5/configs/swift_configs.tar
+
+rhos5-swift1|rhos5-swift2|rhos5-swift3
+
+chown -R root:swift /etc/swift
+
+# is this still requierd?
+mkdir -p /tmp/keystone-signing-swift
+chown -R swift:swift /tmp/keystone-signing-swift
+chmod 700 /tmp/keystone-signing-swift
+
+systemctl enable pcsd
+systemctl start pcsd
+
+pcs cluster auth rhos5-swift1 rhos5-swift2 rhos5-swift3 -u hacluster -p cluster --force
+
+rhos5-swift1:
+
+pcs cluster setup --name rhos5-swift rhos5-swift1 rhos5-swift2 rhos5-swift3
+pcs cluster enable --all
+pcs cluster start --all
+
+sleep 30
+
+pcs stonith create swift1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos5-swift1
+pcs stonith create swift2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-swift2
+pcs stonith create swift3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-swift3
+
+pcs resource create swift-proxy systemd:openstack-swift-proxy op monitor start-delay=10s --clone
+pcs resource create swift-object-expirer systemd:openstack-swift-object-expirer op monitor start-delay=10s
+
+pcs constraint order start swift-proxy then swift-object-expirer
+
+# TEST <- REQUIRES http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-swift-brick deployed
+
+. /srv/rhos5/configs/keystonerc_admin
+
+swift list
+truncate --size=1M /tmp/foobar
+swift upload test /tmp/foobar
+swift list
+swift list test
+swift delete test
+swift list test
+swift list
+
