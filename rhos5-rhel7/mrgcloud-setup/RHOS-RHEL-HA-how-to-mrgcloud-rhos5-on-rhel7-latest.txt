@@ -27,4 +27,6 @@ http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rh
 rhos5-glance1|rhos5-glance2|rhos5-glance3
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-glance
 
+rhos5-cinder1|rhos5-cinder2|rhos5-cinder3
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-cinder
 

@@ -73,6 +73,15 @@ backend glance-registry-vms
     server rhos5-glance2 192.168.16.71:9292 check inter 1s
     server rhos5-glance3 192.168.16.72:9292 check inter 1s
 
+frontend vip-cinder
+    bind 192.168.16.204:8776
+    default_backend cinder-vms
+backend cinder-vms
+    balance roundrobin
+    server rhos5-cinder1 192.168.16.73:8776 check inter 1s
+    server rhos5-cinder2 192.168.16.74:8776 check inter 1s
+    server rhos5-cinder3 192.168.16.75:8776 check inter 1s
+
 # ADD SERVICES AS WE GO HERE
 
 EOF

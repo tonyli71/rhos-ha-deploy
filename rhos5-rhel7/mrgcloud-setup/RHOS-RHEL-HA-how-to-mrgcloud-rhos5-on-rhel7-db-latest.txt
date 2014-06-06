@@ -49,6 +49,8 @@ CREATE DATABASE keystone;
 GRANT ALL ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'keystonetest';
 CREATE DATABASE glance;
 GRANT ALL ON glance.* TO 'glance'@'%' IDENTIFIED BY 'glancetest';
+CREATE DATABASE cinder;
+GRANT ALL ON cinder.* TO 'cinder'@'%' IDENTIFIED BY 'cindertest';
 FLUSH PRIVILEGES;
 quit
 

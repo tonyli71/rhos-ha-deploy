@@ -95,10 +95,15 @@ keystone tenant-create --name services --description "Services Tenant"
 
 # glance
 keystone user-create --name glance --pass glancetest
-keystone  user-role-add --user glance --role admin --tenant services
+keystone user-role-add --user glance --role admin --tenant services
 keystone service-create --name glance --type image --description "Glance Image Service"
-
 keystone endpoint-create --service glance --publicurl "http://vip-glance:9292" --adminurl "http://vip-glance:9292" --internalurl "http://vip-glance:9292"
+
+# cinder
+keystone user-create --name cinder --pass cindertest
+keystone user-role-add --user cinder --role admin --tenant services
+keystone service-create --name cinder --type volume --description "Cinder Volume Service"
+keystone endpoint-create --service cinder --publicurl "http://vip-cinder:8776/v1/\$(tenant_id)s" --adminurl "http://vip-cinder:8776/v1/\$(tenant_id)s" --internalurl "http://vip-cinder:8776/v1/\$(tenant_id)s"
 
 # others
 

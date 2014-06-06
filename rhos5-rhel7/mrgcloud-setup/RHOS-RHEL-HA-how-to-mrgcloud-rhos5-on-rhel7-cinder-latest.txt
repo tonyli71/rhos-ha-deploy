@@ -1,0 +1,115 @@
+rhos5-cinder1|rhos5-cinder2|rhos5-cinder3
+
+yum install -y openstack-cinder openstack-utils openstack-selinux python-memcached
+
+openstack-config --set /etc/cinder/cinder.conf database connection mysql://cinder:cindertest@vip-mysql/cinder
+openstack-config --set /etc/cinder/cinder.conf database max_retries -1
+
+openstack-config --set /etc/cinder/cinder.conf DEFAULT auth_strategy keystone
+openstack-config --set /etc/cinder/cinder.conf keystone_authtoken auth_host vip-keystone
+openstack-config --set /etc/cinder/cinder.conf keystone_authtoken admin_tenant_name services
+openstack-config --set /etc/cinder/cinder.conf keystone_authtoken admin_user cinder
+openstack-config --set /etc/cinder/cinder.conf keystone_authtoken admin_password cindertest
+
+openstack-config --set /etc/cinder/cinder.conf DEFAULT notification_driver messaging
+openstack-config --set /etc/cinder/cinder.conf DEFAULT control_exchange cinder
+openstack-config --set /etc/cinder/cinder.conf DEFAULT rabbit_host vip-rabbitmq
+
+openstack-config --set /etc/cinder/cinder.conf DEFAULT glance_host vip-glance
+
+openstack-config --set /etc/cinder/cinder.conf DEFAULT memcache_servers rhos5-memcache1:11211,rhos5-memcache2:11211,rhos5-memcache3:11211
+
+mkdir -p /srv/rhos5/cinder
+cat > /etc/cinder/nfs_exports << EOF
+mrg-01:/srv/rhos5/cinder
+EOF
+
+chown root:cinder /etc/cinder/nfs_exports
+chmod 0640 /etc/cinder/nfs_exports
+
+openstack-config --set /etc/cinder/cinder.conf DEFAULT nfs_shares_config /etc/cinder/nfs_exports
+openstack-config --set /etc/cinder/cinder.conf DEFAULT nfs_sparsed_volumes true
+openstack-config --set /etc/cinder/cinder.conf DEFAULT nfs_mount_options v3
+
+openstack-config --set /etc/cinder/cinder.conf DEFAULT volume_driver cinder.volume.drivers.nfs.NfsDriver
+
+rhos5-cinder1
+
+su cinder -s /bin/sh -c "cinder-manage db sync"
+
+rhos5-cinder1|rhos5-cinder2|rhos5-cinder3
+
+systemctl enable pcsd
+systemctl start pcsd
+
+pcs cluster auth rhos5-cinder1 rhos5-cinder2 rhos5-cinder3 -u hacluster -p cluster --force
+
+rhos5-cinder1:
+
+pcs cluster setup --name rhos5-cinder rhos5-cinder1 rhos5-cinder2 rhos5-cinder3
+pcs cluster enable --all
+pcs cluster start --all
+
+sleep 30
+
+pcs stonith create cinder1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos5-cinder1
+pcs stonith create cinder2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-cinder2
+pcs stonith create cinder3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-cinder3
+
+pcs resource create cinder-api systemd:openstack-cinder-api op monitor start-delay=10s --clone
+pcs resource create cinder-scheduler systemd:openstack-cinder-scheduler op monitor start-delay=10s --clone
+pcs resource create cinder-volume systemd:openstack-cinder-volume op monitor start-delay=10s --clone
+
+pcs constraint order start cinder-api-clone then cinder-scheduler-clone
+pcs constraint colocation add cinder-scheduler with cinder-api
+pcs constraint order start cinder-scheduler-clone then cinder-volume-clone
+pcs constraint colocation add cinder-volume with cinder-scheduler
+
+# TEST:
+. /srv/rhos5/configs/keystonerc_admin
+
+cinder list
+cinder create 10
+cinder list
+cinder delete $(cinder list | grep available | awk '{print $2}')
+cinder list
+
+# OUTPUT
+
+[root@rhos5-cinder1 cinder]# pcs status
+Cluster name: rhos5-cinder
+Last updated: Fri Jun  6 13:30:12 2014
+Last change: Fri Jun  6 13:28:49 2014 via crm_resource on rhos5-cinder1
+Stack: corosync
+Current DC: rhos5-cinder2 (2) - partition with quorum
+Version: 1.1.10-29.el7-368c726
+3 Nodes configured
+12 Resources configured
+
+
+Online: [ rhos5-cinder1 rhos5-cinder2 rhos5-cinder3 ]
+
+Full list of resources:
+
+ cinder1-fence  (stonith:fence_xvm):    Started rhos5-cinder1 
+ cinder2-fence  (stonith:fence_xvm):    Started rhos5-cinder2 
+ cinder3-fence  (stonith:fence_xvm):    Started rhos5-cinder3 
+ Clone Set: cinder-api-clone [cinder-api]
+     Started: [ rhos5-cinder1 rhos5-cinder2 rhos5-cinder3 ]
+ Clone Set: cinder-scheduler-clone [cinder-scheduler]
+     Started: [ rhos5-cinder1 rhos5-cinder2 rhos5-cinder3 ]
+ Clone Set: cinder-volume-clone [cinder-volume]
+     Started: [ rhos5-cinder1 rhos5-cinder2 rhos5-cinder3 ]
+
+PCSD Status:
+  rhos5-cinder1: Online
+  rhos5-cinder2: Online
+  rhos5-cinder3: Online
+
+Daemon Status:
+  corosync: active/enabled
+  pacemaker: active/enabled
+  pcsd: active/enabled
+[root@rhos5-cinder1 cinder]# 
+
+
