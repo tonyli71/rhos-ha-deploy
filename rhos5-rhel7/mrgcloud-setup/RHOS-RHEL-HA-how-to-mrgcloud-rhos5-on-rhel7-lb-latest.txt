@@ -82,6 +82,15 @@ backend cinder-vms
     server rhos5-cinder2 192.168.16.74:8776 check inter 1s
     server rhos5-cinder3 192.168.16.75:8776 check inter 1s
 
+frontend vip-swift
+    bind 192.168.16.205:8080
+    default_backend swift-vms
+backend swift-vms
+    balance roundrobin
+    server rhos5-swift1 192.168.16.79:8080 check inter 1s
+    server rhos5-swift2 192.168.16.80:8080 check inter 1s
+    server rhos5-swift3 192.168.16.80:8080 check inter 1s
+
 # ADD SERVICES AS WE GO HERE
 
 EOF
