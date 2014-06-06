@@ -99,3 +99,37 @@ keystone token-get
 . /srv/rhos5/configs/keystonerc_admin
 keystone user-list
 
+# OUTPUT
+
+[root@rhos5-keystone1 ~]# pcs status
+Cluster name: rhos5-keystone
+Last updated: Fri Jun  6 09:02:23 2014
+Last change: Thu Jun  5 08:11:26 2014 via cibadmin on rhos5-keystone1
+Stack: corosync
+Current DC: rhos5-keystone1 (1) - partition with quorum
+Version: 1.1.10-29.el7-368c726
+3 Nodes configured
+6 Resources configured
+
+
+Online: [ rhos5-keystone1 rhos5-keystone2 rhos5-keystone3 ]
+
+Full list of resources:
+
+ keystone1-fence        (stonith:fence_xvm):    Started rhos5-keystone1 
+ keystone2-fence        (stonith:fence_xvm):    Started rhos5-keystone2 
+ keystone3-fence        (stonith:fence_xvm):    Started rhos5-keystone3 
+ Clone Set: keystone-clone [keystone]
+     Started: [ rhos5-keystone1 rhos5-keystone2 rhos5-keystone3 ]
+
+PCSD Status:
+  rhos5-keystone1: Online
+  rhos5-keystone2: Online
+  rhos5-keystone3: Online
+
+Daemon Status:
+  corosync: active/enabled
+  pacemaker: active/enabled
+  pcsd: active/enabled
+
+

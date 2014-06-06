@@ -22,3 +22,37 @@ pcs stonith create memcache3-fence fence_xvm multicast_address=225.0.0.9 pcmk_ho
 
 pcs resource create memcached systemd:memcached op monitor start-delay=10s --clone
 
+# OUTPUT
+
+[root@rhos5-memcache1 ~]# pcs status
+Cluster name: rhos5-memcache
+Last updated: Fri Jun  6 09:03:15 2014
+Last change: Thu Jun  5 09:06:56 2014 via cibadmin on rhos5-memcache1
+Stack: corosync
+Current DC: rhos5-memcache3 (3) - partition with quorum
+Version: 1.1.10-29.el7-368c726
+3 Nodes configured
+6 Resources configured
+
+
+Online: [ rhos5-memcache1 rhos5-memcache2 rhos5-memcache3 ]
+
+Full list of resources:
+
+ memcache1-fence        (stonith:fence_xvm):    Started rhos5-memcache1 
+ memcache2-fence        (stonith:fence_xvm):    Started rhos5-memcache2 
+ memcache3-fence        (stonith:fence_xvm):    Started rhos5-memcache3 
+ Clone Set: memcached-clone [memcached]
+     Started: [ rhos5-memcache1 rhos5-memcache2 rhos5-memcache3 ]
+
+PCSD Status:
+  rhos5-memcache1: Online
+  rhos5-memcache2: Online
+  rhos5-memcache3: Online
+
+Daemon Status:
+  corosync: active/enabled
+  pacemaker: active/enabled
+  pcsd: active/enabled
+
+

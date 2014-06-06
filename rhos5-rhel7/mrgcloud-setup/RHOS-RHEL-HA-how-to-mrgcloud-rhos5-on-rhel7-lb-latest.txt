@@ -91,3 +91,49 @@ pcs resource create vip-heat IPaddr2 ip=192.168.16.209
 pcs resource create vip-mongo IPaddr2 ip=192.168.16.210
 pcs resource create vip-ceilometer IPaddr2 ip=192.168.16.211
 
+# OUTPUT
+
+[root@rhos5-lb1 ~]# pcs status
+Cluster name: rhos5-lb
+Last updated: Fri Jun  6 08:58:32 2014
+Last change: Tue Jun  3 11:51:46 2014 via cibadmin on rhos5-lb1
+Stack: corosync
+Current DC: rhos5-lb2 (2) - partition with quorum
+Version: 1.1.10-29.el7-368c726
+3 Nodes configured
+18 Resources configured
+
+
+Online: [ rhos5-lb1 rhos5-lb2 rhos5-lb3 ]
+
+Full list of resources:
+
+ lb1-fence      (stonith:fence_xvm):    Started rhos5-lb1 
+ lb2-fence      (stonith:fence_xvm):    Started rhos5-lb2 
+ lb3-fence      (stonith:fence_xvm):    Started rhos5-lb3 
+ Clone Set: lb-haproxy-clone [lb-haproxy]
+     Started: [ rhos5-lb1 rhos5-lb2 rhos5-lb3 ]
+ vip-db (ocf::heartbeat:IPaddr2):       Started rhos5-lb1 
+ vip-rabbitmq   (ocf::heartbeat:IPaddr2):       Started rhos5-lb2 
+ vip-keystone   (ocf::heartbeat:IPaddr2):       Started rhos5-lb3 
+ vip-glance     (ocf::heartbeat:IPaddr2):       Started rhos5-lb1 
+ vip-cinder     (ocf::heartbeat:IPaddr2):       Started rhos5-lb2 
+ vip-swift      (ocf::heartbeat:IPaddr2):       Started rhos5-lb3 
+ vip-neutron    (ocf::heartbeat:IPaddr2):       Started rhos5-lb1 
+ vip-nova       (ocf::heartbeat:IPaddr2):       Started rhos5-lb2 
+ vip-horizon    (ocf::heartbeat:IPaddr2):       Started rhos5-lb3 
+ vip-heat       (ocf::heartbeat:IPaddr2):       Started rhos5-lb1 
+ vip-mongo      (ocf::heartbeat:IPaddr2):       Started rhos5-lb2 
+ vip-ceilometer (ocf::heartbeat:IPaddr2):       Started rhos5-lb3 
+
+PCSD Status:
+  rhos5-lb1: Online
+  rhos5-lb2: Online
+  rhos5-lb3: Online
+
+Daemon Status:
+  corosync: active/enabled
+  pacemaker: active/enabled
+  pcsd: active/enabled
+
+

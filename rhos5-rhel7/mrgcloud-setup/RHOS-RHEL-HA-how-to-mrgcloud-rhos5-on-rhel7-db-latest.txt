@@ -50,3 +50,37 @@ GRANT ALL ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'keystonetest';
 FLUSH PRIVILEGES;
 quit
 
+# OUTPUT
+
+[root@rhos5-db1 ~]# pcs status
+Cluster name: rhos5-db
+Last updated: Fri Jun  6 08:59:47 2014
+Last change: Thu Jun  5 07:30:13 2014 via crm_resource on rhos5-db2
+Stack: corosync
+Current DC: rhos5-db2 (2) - partition with quorum
+Version: 1.1.10-29.el7-368c726
+3 Nodes configured
+5 Resources configured
+
+
+Online: [ rhos5-db1 rhos5-db2 rhos5-db3 ]
+
+Full list of resources:
+
+ db1-fence      (stonith:fence_xvm):    Started rhos5-db2 
+ db2-fence      (stonith:fence_xvm):    Started rhos5-db3 
+ db3-fence      (stonith:fence_xvm):    Started rhos5-db1 
+ Resource Group: db-group
+     db-fs      (ocf::heartbeat:Filesystem):    Started rhos5-db2 
+     maria-db   (ocf::heartbeat:mysql): Started rhos5-db2 
+
+PCSD Status:
+  rhos5-db1: Online
+  rhos5-db2: Online
+  rhos5-db3: Online
+
+Daemon Status:
+  corosync: active/enabled
+  pacemaker: active/enabled
+  pcsd: active/enabled
+
