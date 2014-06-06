@@ -18,6 +18,9 @@ virsh start rhos5-keystone1
 qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-memcache1.cow
 virsh define /srv/rhos5-rhel7-vms/rhos5-memcache1.xml
 virsh start rhos5-memcache1
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-glance1.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-glance1.xml
+virsh start rhos5-glance1
 
 mrg08:
 
@@ -36,6 +39,9 @@ virsh start rhos5-keystone2
 qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-memcache2.cow
 virsh define /srv/rhos5-rhel7-vms/rhos5-memcache2.xml
 virsh start rhos5-memcache2
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-glance2.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-glance2.xml
+virsh start rhos5-glance2
 
 mrg09:
 
@@ -54,4 +60,7 @@ virsh start rhos5-keystone3
 qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-memcache3.cow
 virsh define /srv/rhos5-rhel7-vms/rhos5-memcache3.xml
 virsh start rhos5-memcache3
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-glance3.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-glance3.xml
+virsh start rhos5-glance3
 

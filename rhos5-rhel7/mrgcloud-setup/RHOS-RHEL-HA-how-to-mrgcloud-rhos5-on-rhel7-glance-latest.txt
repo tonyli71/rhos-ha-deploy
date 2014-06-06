@@ -1,0 +1,5 @@
+rhos5-glance1|rhos5-glance2|rhos5-glance3
+
+yum install -y openstack-glance openstack-utils openstack-selinux
+
+

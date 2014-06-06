@@ -183,7 +183,7 @@ EOF
 cat > /etc/named/192.168.16.arpa << EOF
 $TTL    86400
 @       IN      SOA     mrg-01. fdinitto.redhat.com.  (
-                                      2014040202 ; Serial
+                                      2014060601 ; Serial
                                       21600      ; Refresh
                                       10800      ; Retry
                                       1209600    ; Expire
@@ -261,6 +261,18 @@ $TTL    86400
 67      IN      PTR     rhos5-memcache1.vmnet.mpc.lab.eng.bos.redhat.com.
 68      IN      PTR     rhos5-memcache2.vmnet.mpc.lab.eng.bos.redhat.com.
 69      IN      PTR     rhos5-memcache3.vmnet.mpc.lab.eng.bos.redhat.com.
+70      IN      PTR     rhos5-glance1.vmnet.mpc.lab.eng.bos.redhat.com.
+71      IN      PTR     rhos5-glance2.vmnet.mpc.lab.eng.bos.redhat.com.
+72      IN      PTR     rhos5-glance3.vmnet.mpc.lab.eng.bos.redhat.com.
+73      IN      PTR     rhos5-cinder1.vmnet.mpc.lab.eng.bos.redhat.com.
+74      IN      PTR     rhos5-cinder2.vmnet.mpc.lab.eng.bos.redhat.com.
+75      IN      PTR     rhos5-cinder3.vmnet.mpc.lab.eng.bos.redhat.com.
+76      IN      PTR     rhos5-swift-brick1.vmnet.mpc.lab.eng.bos.redhat.com.
+77      IN      PTR     rhos5-swift-brick2.vmnet.mpc.lab.eng.bos.redhat.com.
+78      IN      PTR     rhos5-swift-brick3.vmnet.mpc.lab.eng.bos.redhat.com.
+79      IN      PTR     rhos5-swift1.vmnet.mpc.lab.eng.bos.redhat.com.
+80      IN      PTR     rhos5-swift2.vmnet.mpc.lab.eng.bos.redhat.com.
+81      IN      PTR     rhos5-swift3.vmnet.mpc.lab.eng.bos.redhat.com.
 
 200     IN      PTR     vip-mysql.vmnet.mpc.lab.eng.bos.redhat.com.
 201     IN      PTR     vip-qpid.vmnet.mpc.lab.eng.bos.redhat.com.
@@ -296,7 +308,7 @@ EOF
 cat > /etc/named/vmnet.mpc.lab.eng.bos.redhat.com << EOF
 $TTL    86400
 @       IN      SOA     mrg-01. fdinitto.redhat.com. (
-                                2014060201 ; serial
+                                2014060601 ; serial
                                 21600      ; refresh (24 hours)
                                 10800      ; retry (2 hours)
                                 1209600    ; expire (1000 hours)
@@ -381,6 +393,18 @@ rhos5-keystone3         IN      A       192.168.16.66
 rhos5-memcache1         IN      A       192.168.16.67
 rhos5-memcache2         IN      A       192.168.16.68
 rhos5-memcache3         IN      A       192.168.16.69
+rhos5-glance1           IN      A       192.168.16.70
+rhos5-glance2           IN      A       192.168.16.71
+rhos5-glance3           IN      A       192.168.16.72
+rhos5-cinder1           IN      A       192.168.16.73
+rhos5-cinder2           IN      A       192.168.16.74
+rhos5-cinder3           IN      A       192.168.16.75
+rhos5-swift-brick1      IN      A       192.168.16.76
+rhos5-swift-brick2      IN      A       192.168.16.77
+rhos5-swift-brick3      IN      A       192.168.16.78
+rhos5-swift1            IN      A       192.168.16.79
+rhos5-swift2            IN      A       192.168.16.80
+rhos5-swift3            IN      A       192.168.16.81
 
 vip-mysql       IN      A       192.168.16.200
 vip-qpid        IN      A       192.168.16.201
@@ -683,6 +707,54 @@ host rhos5-memcache2 {
 host rhos5-memcache3 {
   hardware ethernet 54:52:00:09:01:1a;
   fixed-address rhos5-memcache3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-glance1 {
+  hardware ethernet 54:52:00:07:01:1b;
+  fixed-address rhos5-glance1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-glance2 {
+  hardware ethernet 54:52:00:08:01:1b;
+  fixed-address rhos5-glance2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-glance3 {
+  hardware ethernet 54:52:00:09:01:1b;
+  fixed-address rhos5-glance3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-cinder1 {
+  hardware ethernet 54:52:00:07:01:1c;
+  fixed-address rhos5-cinder1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-cinder2 {
+  hardware ethernet 54:52:00:08:01:1c;
+  fixed-address rhos5-cinder2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-cinder3 {
+  hardware ethernet 54:52:00:09:01:1c;
+  fixed-address rhos5-cinder3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-swift-brick1 {
+  hardware ethernet 54:52:00:07:01:1d;
+  fixed-address rhos5-swift-brick1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-swift-brick2 {
+  hardware ethernet 54:52:00:08:01:1d;
+  fixed-address rhos5-swift-brick2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-swift-brick3 {
+  hardware ethernet 54:52:00:09:01:1d;
+  fixed-address rhos5-swift-brick3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-swift1 {
+  hardware ethernet 54:52:00:07:01:1e;
+  fixed-address rhos5-swift1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-swift2 {
+  hardware ethernet 54:52:00:08:01:1e;
+  fixed-address rhos5-swift2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-swift3 {
+  hardware ethernet 54:52:00:09:01:1e;
+  fixed-address rhos5-swift3.vmnet.mpc.lab.eng.bos.redhat.com;
 }
 
 EOF
