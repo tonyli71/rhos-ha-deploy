@@ -6,8 +6,8 @@ no support.
 it's a list of receipts i am using to setup my systems to
 deploy RHOS+RHEL-HA.
 
-this project is distributed under the Rude Software Licence:
+Copyright 2014 - Fabio M. Di Nitto <fdinitto@redhat.com>
 
-https://github.com/adnam/Rude-Software-License
+This work is released under the Creative Common Licence 4.0 CC BY.
 
-A copy is provided also in LICENCE.NSFW.
+https://creativecommons.org/licenses/by/4.0/legalcode
