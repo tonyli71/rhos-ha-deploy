@@ -1,6 +1,3 @@
-qemu-img create -b /localvms/rhos4-base.img -f qcow2 /localvms/rhos4-swift-brick1.cow
-truncate --size=10G /localvms/rhos4-swift-brick1_data.img
-
 mrg07:
 
 qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-lb1.cow
@@ -31,6 +28,27 @@ virsh start rhos5-swift-brick1
 qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-swift1.cow
 virsh define /srv/rhos5-rhel7-vms/rhos5-swift1.xml
 virsh start rhos5-swift1
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-neutron1.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-neutron1.xml
+virsh start rhos5-neutron1
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-neutron-n1.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-neutron-n1.xml
+virsh start rhos5-neutron-n1
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-nova1.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-nova1.xml
+virsh start rhos5-nova1
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-horizon1.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-horizon1.xml
+virsh start rhos5-horizon1
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-heat1.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-heat1.xml
+virsh start rhos5-heat1
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-mongodb1.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-mongodb1.xml
+virsh start rhos5-mongodb1
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-ceilometer1.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-ceilometer1.xml
+virsh start rhos5-ceilometer1
 
 mrg08:
 
@@ -62,6 +80,27 @@ virsh start rhos5-swift-brick2
 qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-swift2.cow
 virsh define /srv/rhos5-rhel7-vms/rhos5-swift2.xml
 virsh start rhos5-swift2
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-neutron2.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-neutron2.xml
+virsh start rhos5-neutron2
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-neutron-n2.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-neutron-n2.xml
+virsh start rhos5-neutron-n2
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-nova2.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-nova2.xml
+virsh start rhos5-nova2
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-horizon2.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-horizon2.xml
+virsh start rhos5-horizon2
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-heat2.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-heat2.xml
+virsh start rhos5-heat2
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-mongodb2.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-mongodb2.xml
+virsh start rhos5-mongodb2
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-ceilometer2.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-ceilometer2.xml
+virsh start rhos5-ceilometer2
 
 mrg09:
 
@@ -93,4 +132,25 @@ virsh start rhos5-swift-brick3
 qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-swift3.cow
 virsh define /srv/rhos5-rhel7-vms/rhos5-swift3.xml
 virsh start rhos5-swift3
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-neutron3.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-neutron3.xml
+virsh start rhos5-neutron3
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-neutron-n3.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-neutron-n3.xml
+virsh start rhos5-neutron-n3
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-nova3.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-nova3.xml
+virsh start rhos5-nova3
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-horizon3.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-horizon3.xml
+virsh start rhos5-horizon3
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-heat3.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-heat3.xml
+virsh start rhos5-heat3
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-mongodb3.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-mongodb3.xml
+virsh start rhos5-mongodb3
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-ceilometer3.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-ceilometer3.xml
+virsh start rhos5-ceilometer3
 

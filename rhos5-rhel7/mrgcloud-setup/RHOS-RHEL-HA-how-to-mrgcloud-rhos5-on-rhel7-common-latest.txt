@@ -1,4 +1,4 @@
-# this is the common to all VMs/clusters!
+t# this is the common to all VMs/clusters!
 
 # to be executed on ALL nodes of a given cluster:
 
