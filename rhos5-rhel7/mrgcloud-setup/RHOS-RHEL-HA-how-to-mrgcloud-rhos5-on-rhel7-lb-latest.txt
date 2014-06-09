@@ -91,7 +91,99 @@ backend swift-vms
     server rhos5-swift2 192.168.16.80:8080 check inter 1s
     server rhos5-swift3 192.168.16.80:8080 check inter 1s
 
-# ADD SERVICES AS WE GO HERE
+# EVERYTHING BELOW THIS LINE STILL NEEDS TESTING! Blindly ported from OSP4.
+
+frontend vip-neutron
+    bind 192.168.16.206:9696
+    default_backend neutron-vms
+backend neutron-vms
+    balance roundrobin
+    server rhos5-neutron1 192.168.16.82:9696 check inter 1s
+    server rhos5-neutron2 192.168.16.83:9696 check inter 1s
+    server rhos5-neutron3 192.168.16.84:9696 check inter 1s
+
+frontend vip-nova-vnc-novncproxy
+    bind 192.168.16.207:6080
+    default_backend nova-vnc-novncproxy-vms
+backend nova-vnc-novncproxy-vms
+    balance roundrobin
+    server rhos5-nova1 192.168.16.88:6080 check inter 1s
+    server rhos5-nova2 192.168.16.89:6080 check inter 1s
+    server rhos5-nova3 192.168.16.90:6080 check inter 1s
+
+frontend vip-nova-vnc-xvpvncproxy
+    bind 192.168.16.207:6081
+    default_backend nova-vnc-xvpvncproxy-vms
+backend nova-vnc-xvpvncproxy-vms
+    balance roundrobin
+    server rhos5-nova1 192.168.16.88:6081 check inter 1s
+    server rhos5-nova2 192.168.16.89:6081 check inter 1s
+    server rhos5-nova3 192.168.16.90:6081 check inter 1s
+
+frontend vip-nova-metadata
+    bind 192.168.16.207:8775
+    default_backend nova-metadata-vms
+backend nova-metadata-vms
+    balance roundrobin
+    server rhos5-nova1 192.168.16.88:8775 check inter 1s
+    server rhos5-nova2 192.168.16.89:8775 check inter 1s
+    server rhos5-nova3 192.168.16.90:8775 check inter 1s
+
+frontend vip-nova-api
+    bind 192.168.16.207:8774
+    default_backend nova-api-vms
+backend nova-api-vms
+    balance roundrobin
+    server rhos5-nova1 192.168.16.88:8774 check inter 1s
+    server rhos5-nova2 192.168.16.89:8774 check inter 1s
+    server rhos5-nova3 192.168.16.90:8774 check inter 1s
+
+frontend vip-horizon
+    bind 192.168.16.208:80
+    default_backend horizon-vms
+backend horizon-vms
+    balance roundrobin
+    server rhos5-horizon1 192.168.16.91:80 check inter 1s
+    server rhos5-horizon2 192.168.16.92:80 check inter 1s
+    server rhos5-horizon3 192.168.16.93:80 check inter 1s
+
+frontend vip-heat-cfn
+    bind 192.168.16.209:8000
+    default_backend heat-cfn-vms
+backend heat-cfn-vms
+    balance roundrobin
+    server rhos5-heat1 192.168.16.94:8000 check inter 1s
+    server rhos5-heat2 192.168.16.95:8000 check inter 1s
+    server rhos5-heat3 192.168.16.96:8000 check inter 1s
+
+frontend vip-heat-cloudw
+    bind 192.168.16.209:8003
+    default_backend heat-cloudw-vms
+backend heat-cloudw-vms
+    balance roundrobin
+    server rhos5-heat1 192.168.16.97:8003 check inter 1s
+    server rhos5-heat2 192.168.16.98:8003 check inter 1s
+    server rhos5-heat3 192.168.16.99:8003 check inter 1s
+
+frontend vip-heat-srv
+    bind 192.168.16.209:8004
+    default_backend heat-srv-vms
+backend heat-srv-vms
+    balance roundrobin
+    server rhos5-heat1 192.168.16.97:8004 check inter 1s
+    server rhos5-heat2 192.168.16.98:8004 check inter 1s
+    server rhos5-heat3 192.168.16.99:8004 check inter 1s
+
+frontend vip-ceilometer
+    bind 192.168.16.211:8777
+    timeout client 90s
+    default_backend ceilometer-vms
+backend ceilometer-vms
+    balance roundrobin
+    timeout server 90s
+    server rhos5-ceilometer1 192.168.16.100:8777 check inter 1s
+    server rhos5-ceilometer2 192.168.16.101:8777 check inter 1s
+    server rhos5-ceilometer3 192.168.16.102:8777 check inter 1s
 
 EOF
 
@@ -124,7 +216,6 @@ pcs resource create vip-neutron IPaddr2 ip=192.168.16.206
 pcs resource create vip-nova IPaddr2 ip=192.168.16.207
 pcs resource create vip-horizon IPaddr2 ip=192.168.16.208
 pcs resource create vip-heat IPaddr2 ip=192.168.16.209
-pcs resource create vip-mongo IPaddr2 ip=192.168.16.210
 pcs resource create vip-ceilometer IPaddr2 ip=192.168.16.211
 
 # OUTPUT
@@ -159,7 +250,6 @@ Full list of resources:
  vip-nova       (ocf::heartbeat:IPaddr2):       Started rhos5-lb2 
  vip-horizon    (ocf::heartbeat:IPaddr2):       Started rhos5-lb3 
  vip-heat       (ocf::heartbeat:IPaddr2):       Started rhos5-lb1 
- vip-mongo      (ocf::heartbeat:IPaddr2):       Started rhos5-lb2 
  vip-ceilometer (ocf::heartbeat:IPaddr2):       Started rhos5-lb3 
 
 PCSD Status:
