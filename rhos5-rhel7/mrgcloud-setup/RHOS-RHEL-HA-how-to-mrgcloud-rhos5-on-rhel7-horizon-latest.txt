@@ -1,0 +1,68 @@
+rhos5-horizon1|rhos5-horizon2|rhos5-horizon3
+
+yum install -y mod_wsgi httpd mod_ssl python-memcached openstack-dashboard
+
+sed   -i -e "s#ALLOWED_HOSTS.*#ALLOWED_HOSTS = ['*',]#g" -e   "s#^CACHES#SESSION_ENGINE =   'django.contrib.sessions.backends.cache'\nCACHES#g#" -e   "s#locmem.LocMemCache'#memcached.MemcachedCache',\n\t'LOCATION' : [   'rhos5-memcache1:11211', 'rhos5-memcache2:11211',  'rhos5-memcache3:11211', ]#g" -e  's#OPENSTACK_HOST =.*#OPENSTACK_HOST =  "vip-keystone"#g'  /etc/openstack-dashboard/local_settings
+
+cat > /etc/httpd/conf.d/server-status.conf << EOF
+<Location /server-status>
+    SetHandler server-status
+    Order deny,allow
+    Deny from all
+    Allow from localhost
+</Location>
+EOF
+
+systemctl enable pcsd
+systemctl start pcsd
+
+pcs cluster auth rhos5-horizon1 rhos5-horizon2 rhos5-horizon3 -u hacluster -p cluster --force
+
+rhos5-horizon1:
+
+pcs cluster setup --name rhos5-horizon rhos5-horizon1 rhos5-horizon2 rhos5-horizon3
+pcs cluster enable --all
+pcs cluster start --all
+
+sleep 30
+
+pcs stonith create horizon1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos5-horizon1
+pcs stonith create horizon2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-horizon2
+pcs stonith create horizon3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-horizon3
+
+pcs resource create httpd apache --clone
+
+# OUTPUT
+
+[root@rhos5-horizon1 ~]# pcs status
+Cluster name: rhos5-horizon
+Last updated: Tue Jun 10 16:55:27 2014
+Last change: Tue Jun 10 16:54:56 2014 via cibadmin on rhos5-horizon1
+Stack: corosync
+Current DC: rhos5-horizon3 (3) - partition with quorum
+Version: 1.1.10-29.el7-368c726
+3 Nodes configured
+6 Resources configured
+
+
+Online: [ rhos5-horizon1 rhos5-horizon2 rhos5-horizon3 ]
+
+Full list of resources:
+
+ horizon1-fence (stonith:fence_xvm):    Started rhos5-horizon1 
+ horizon2-fence (stonith:fence_xvm):    Started rhos5-horizon2 
+ horizon3-fence (stonith:fence_xvm):    Started rhos5-horizon3 
+ Clone Set: httpd-clone [httpd]
+     Started: [ rhos5-horizon1 rhos5-horizon2 rhos5-horizon3 ]
+
+PCSD Status:
+  rhos5-horizon1: Online
+  rhos5-horizon2: Online
+  rhos5-horizon3: Online
+
+Daemon Status:
+  corosync: active/enabled
+  pacemaker: active/enabled
+  pcsd: active/enabled
+
+

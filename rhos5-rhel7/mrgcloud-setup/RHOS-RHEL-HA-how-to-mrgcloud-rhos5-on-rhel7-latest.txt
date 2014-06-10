@@ -38,6 +38,9 @@ http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rh
 
 -----
 
+rhos5-horizon1|rhos5-horizon2|rhos5-horizon3
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-horizon
+
 rhos5-mongodb1|rhos5-mongodb2|rhos5-mongodb3
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-mongodb
 
