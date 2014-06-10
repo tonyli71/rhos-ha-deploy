@@ -2,7 +2,9 @@ rhos5-horizon1|rhos5-horizon2|rhos5-horizon3
 
 yum install -y mod_wsgi httpd mod_ssl python-memcached openstack-dashboard
 
-sed   -i -e "s#ALLOWED_HOSTS.*#ALLOWED_HOSTS = ['*',]#g" -e   "s#^CACHES#SESSION_ENGINE =   'django.contrib.sessions.backends.cache'\nCACHES#g#" -e   "s#locmem.LocMemCache'#memcached.MemcachedCache',\n\t'LOCATION' : [   'rhos5-memcache1:11211', 'rhos5-memcache2:11211',  'rhos5-memcache3:11211', ]#g" -e  's#OPENSTACK_HOST =.*#OPENSTACK_HOST =  "vip-keystone"#g'  /etc/openstack-dashboard/local_settings
+# THIS IS DIFFERENT FROM OSP4!!!!!
+
+sed -i -e "s#ALLOWED_HOSTS.*#ALLOWED_HOSTS = ['*',]#g" -e "s#^CACHES#SESSION_ENGINE = 'django.contrib.sessions.backends.cache'\nCACHES#g#" -e "s#locmem.LocMemCache'#memcached.MemcachedCache',\n\t'LOCATION' : [ 'rhos5-memcache1:11211', 'rhos5-memcache2:11211', 'rhos5-memcache3:11211', ]#g" -e 's#OPENSTACK_HOST =.*#OPENSTACK_HOST = "vip-keystone"#g' -e "s#^LOCAL_PATH.*#LOCAL_PATH = '/var/lib/openstack-dashboard'#g" /etc/openstack-dashboard/local_settings
 
 cat > /etc/httpd/conf.d/server-status.conf << EOF
 <Location /server-status>
@@ -12,6 +14,22 @@ cat > /etc/httpd/conf.d/server-status.conf << EOF
     Allow from localhost
 </Location>
 EOF
+
+rhos5-horizon1
+
+service httpd stop
+service httpd start
+wget http://rhos5-horizon1/dashboard -O /dev/null
+service httpd stop
+cp /var/lib/openstack-dashboard/.secret_key_store /srv/rhos5/configs/horizon_secret_key_store 
+
+rhos5-horizon2|rhos5-horizon3
+
+cp /srv/rhos5/configs/horizon_secret_key_store /var/lib/openstack-dashboard/.secret_key_store
+
+rhos4-horizon1|rhos4-horizon2|rhos5-horizon3
+
+chown apache:apache /var/lib/openstack-dashboard/.secret_key_store
 
 systemctl enable pcsd
 systemctl start pcsd
