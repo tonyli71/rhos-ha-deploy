@@ -30,45 +30,8 @@ pcs stonith create lb1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_lis
 pcs stonith create lb2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-rabbitmq2
 pcs stonith create lb3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-rabbitmq3
 
-# THE USUAL WTF
-# use A/P:
-pcs resource create rabbitmq-server systemd:rabbitmq-server op monitor start-delay=20s
+# REQUIRES rabbitmq-server.noarch 0:3.1.5-6.2.el7ost  or higher!!!
 
-# till https://bugzilla.redhat.com/show_bug.cgi?id=1104193 is fixed
-
-# OUTPUT
-
-[root@rhos5-rabbitmq1 ~]# pcs status
-Cluster name: rhos5-rabbitmq
-Last updated: Fri Jun  6 09:01:14 2014
-Last change: Tue Jun  3 15:55:02 2014 via cibadmin on rhos5-rabbitmq2
-Stack: corosync
-Current DC: rhos5-rabbitmq3 (3) - partition with quorum
-Version: 1.1.10-29.el7-368c726
-3 Nodes configured
-4 Resources configured
-
-
-Online: [ rhos5-rabbitmq1 rhos5-rabbitmq2 rhos5-rabbitmq3 ]
-
-Full list of resources:
-
- lb1-fence      (stonith:fence_xvm):    Started rhos5-rabbitmq1 
- lb2-fence      (stonith:fence_xvm):    Started rhos5-rabbitmq2 
- lb3-fence      (stonith:fence_xvm):    Started rhos5-rabbitmq3 
- rabbitmq-server        (systemd:rabbitmq-server):      Started rhos5-rabbitmq1 
-
-PCSD Status:
-  rhos5-rabbitmq1: Online
-  rhos5-rabbitmq2: Online
-  rhos5-rabbitmq3: Online
-
-Daemon Status:
-  corosync: active/enabled
-  pacemaker: active/enabled
-  pcsd: active/enabled
-
-# you can ignore anything below this for now
 pcs resource create rabbitmq-server systemd:rabbitmq-server op monitor start-delay=20s --clone
 
 rhos5-rabbitmq2|rhos5-rabbitmq3:
@@ -92,4 +55,36 @@ rhos5-rabbitmq1|rhos5-rabbitmq2|rhos5-rabbitmq3:
 rabbitmqctl cluster_status
 rabbitmqctl list_policies
 
+# OUTPUT
+
+[root@rhos5-rabbitmq1 ~]# pcs status
+Cluster name: rhos5-rabbitmq
+Last updated: Tue Jun 10 17:32:30 2014
+Last change: Tue Jun 10 17:30:57 2014 via cibadmin on rhos5-rabbitmq1
+Stack: corosync
+Current DC: rhos5-rabbitmq3 (3) - partition with quorum
+Version: 1.1.10-29.el7-368c726
+3 Nodes configured
+6 Resources configured
+
+
+Online: [ rhos5-rabbitmq1 rhos5-rabbitmq2 rhos5-rabbitmq3 ]
+
+Full list of resources:
+
+ lb1-fence      (stonith:fence_xvm):    Started rhos5-rabbitmq1 
+ lb2-fence      (stonith:fence_xvm):    Started rhos5-rabbitmq2 
+ lb3-fence      (stonith:fence_xvm):    Started rhos5-rabbitmq3 
+ Clone Set: rabbitmq-server-clone [rabbitmq-server]
+     Started: [ rhos5-rabbitmq1 rhos5-rabbitmq2 rhos5-rabbitmq3 ]
+
+PCSD Status:
+  rhos5-rabbitmq1: Online
+  rhos5-rabbitmq2: Online
+  rhos5-rabbitmq3: Online
+
+Daemon Status:
+  corosync: active/enabled
+  pacemaker: active/enabled
+  pcsd: active/enabled
 
