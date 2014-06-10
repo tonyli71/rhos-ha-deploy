@@ -1,0 +1,78 @@
+rhos5-mongodb1|rhos5-mongodb2|rhos5-mongodb3
+
+yum install -y mongodb mongodb-server
+
+sed -i -e 's#bind_ip.*#bind_ip = 0.0.0.0#g'  /etc/mongodb.conf
+echo "replSet = ceilometer" >> /etc/mongodb.conf 
+
+systemctl enable pcsd
+systemctl start pcsd
+
+pcs cluster auth rhos5-mongodb1 rhos5-mongodb2 rhos5-mongodb3 -u hacluster -p cluster --force
+
+rhos5-mongodb1:
+
+pcs cluster setup --name rhos5-mongodb rhos5-mongodb1 rhos5-mongodb2 rhos5-mongodb3
+pcs cluster enable --all
+pcs cluster start --all
+
+sleep 30
+
+pcs stonith create mongodb1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos5-mongodb1
+pcs stonith create mongodb2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-mongodb2
+pcs stonith create mongodb3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-mongodb3
+
+pcs resource create mongodb systemd:mongod op start timeout=120s op monitor start-delay=30s --clone
+
+# Setup replica (need to wait for mongodb to settle down first!)
+sleep 120
+
+rm -f /root/mongo_replica_setup.js
+cat > /root/mongo_replica_setup.js << EOF
+rs.initiate()
+sleep(10000)
+rs.add("rhos5-mongodb1.vmnet.mpc.lab.eng.bos.redhat.com");
+rs.add("rhos5-mongodb2.vmnet.mpc.lab.eng.bos.redhat.com");
+rs.add("rhos5-mongodb3.vmnet.mpc.lab.eng.bos.redhat.com");
+EOF
+
+mongo /root/mongo_replica_setup.js
+rm -f /root/mongo_replica_setup.js
+
+# Allow for primary election and sync of replica set
+sleep 60
+
+# OUTPUT
+
+[root@rhos5-mongodb1 ~]# pcs status
+Cluster name: rhos5-mongodb
+Last updated: Tue Jun 10 14:51:33 2014
+Last change: Tue Jun 10 14:37:49 2014 via cibadmin on rhos5-mongodb1
+Stack: corosync
+Current DC: rhos5-mongodb1 (1) - partition with quorum
+Version: 1.1.10-29.el7-368c726
+3 Nodes configured
+6 Resources configured
+
+
+Online: [ rhos5-mongodb1 rhos5-mongodb2 rhos5-mongodb3 ]
+
+Full list of resources:
+
+ mongodb1-fence (stonith:fence_xvm):    Started rhos5-mongodb1 
+ mongodb2-fence (stonith:fence_xvm):    Started rhos5-mongodb2 
+ mongodb3-fence (stonith:fence_xvm):    Started rhos5-mongodb3 
+ Clone Set: mongodb-clone [mongodb]
+     Started: [ rhos5-mongodb1 rhos5-mongodb2 rhos5-mongodb3 ]
+
+PCSD Status:
+  rhos5-mongodb1: Online
+  rhos5-mongodb2: Online
+  rhos5-mongodb3: Online
+
+Daemon Status:
+  corosync: active/enabled
+  pacemaker: active/enabled
+  pcsd: active/enabled
+
+
