@@ -48,7 +48,6 @@ drop user ''@'rhos5-db1.vmnet.mpc.lab.eng.bos.redhat.com';
 drop user 'root'@'rhos5-db1.vmnet.mpc.lab.eng.bos.redhat.com';
 GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED by 'mysqltest' WITH GRANT OPTION;
 flush privileges;
-SET GLOBAL max_connect_errors=10;
 quit
 mysqladmin flush-hosts
 

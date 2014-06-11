@@ -1,112 +1,115 @@
-<!DOCTYPE html PUBLIC
-	  "-//W3C//DTD XHTML 1.0 Transitional//EN"
-	  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+rhos5-neutron-n1|rhos5-neutron-n2|rhos5-neutron-n3:
 
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
-  <head>
-    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-    <meta http-equiv="Content-Language" content="en-us" />
-    
-    <title>Red Hat Etherpad: Sign In</title>
-    <base href="http://rhel-ha.etherpad.corp.redhat.com/" />
+yum install -y openstack-neutron openstack-neutron-openvswitch openstack-utils openvswitch
 
-    <!-- CSS -->
-    <link href="/static/compressed/d8572aad6ef9c2e761062aa6ca03fd51.css" rel="stylesheet" type="text/css" />
+systemctl enable openvswitch
+systemctl start openvswitch
 
-    
+ovs-vsctl add-br br-int
+ovs-vsctl add-br br-ex
+ovs-vsctl add-port br-ex eth0
 
-    <!-- javascript -->
+openstack-config --set /etc/neutron/neutron.conf DEFAULT auth_strategy keystone
+openstack-config --set /etc/neutron/neutron.conf keystone_authtoken auth_host vip-keystone
+openstack-config --set /etc/neutron/neutron.conf keystone_authtoken admin_tenant_name services
+openstack-config --set /etc/neutron/neutron.conf keystone_authtoken admin_user neutron
+openstack-config --set /etc/neutron/neutron.conf keystone_authtoken admin_password neutrontest
 
-    <script type="text/javascript">
-  // <![CDATA[
-var clientVars = {"hooks":{}};
-  // ]]>
-</script>
-    <script type="text/javascript" src="/static/compressed/c4d0eabd7f95c64029ee87b13f0ef496.js"></script>
-    
+openstack-config --set /etc/neutron/neutron.conf database connection mysql://neutron:neutrontest@vip-mysql:3306/ovs_neutron
+openstack-config --set /etc/neutron/neutron.conf database max_retries -1
 
-  </head>
+openstack-config --set /etc/neutron/neutron.conf DEFAULT rabbit_host vip-rabbitmq
 
-  <body id="framedpagebody" class="pro-body">
+openstack-config --set /etc/neutron/neutron.conf DEFAULT notification_driver neutron.openstack.common.notifier.rpc_notifier
 
-    
+# do we need this at all?
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_url http://vip-nova:8774
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_region_name regionOne
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_username compute
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_tenant_id 72632ec3e65f49bc96754dddc0fd0d83
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_password novatest
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_auth_url "http://vip-nova:8774/v2/\$(tenant_id)s"
 
-<div id="container">
+openstack-config  --set /etc/neutron/neutron.conf DEFAULT core_plugin   neutron.plugins.openvswitch.ovs_neutron_plugin.OVSNeutronPluginV2
+
+ln -s /etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini /etc/neutron/plugin.ini
+
+openstack-config --set /etc/neutron/plugin.ini database connection mysql://neutron:neutrontest@vip-mysql/ovs_neutron
+openstack-config --set /etc/neutron/plugin.ini OVS enable_tunneling True
+openstack-config --set /etc/neutron/plugin.ini OVS tunnel_id_ranges 1:1000
+openstack-config --set /etc/neutron/plugin.ini OVS tenant_network_type gre
+
+openstack-config --set /etc/neutron/plugin.ini OVS integration_bridge br-int
+openstack-config --set /etc/neutron/plugin.ini OVS tunnel_bridge br-tun
+openstack-config   --set /etc/neutron/plugin.ini OVS local_ip $(ip addr show dev eth1   scope global | grep inet | sed -e 's#.*inet ##g' -e 's#/.*##g')
+
+XXXXXX
+
+openstack-config --set /etc/neutron/metadata_agent.ini DEFAULT auth_strategy keystone
+openstack-config --set /etc/neutron/metadata_agent.ini DEFAULT auth_url http://vip-keystone:35357/v2.0
+openstack-config --set /etc/neutron/metadata_agent.ini DEFAULT auth_host vip-keystone
+openstack-config --set /etc/neutron/metadata_agent.ini DEFAULT auth_region regionOne
+openstack-config --set /etc/neutron/metadata_agent.ini DEFAULT admin_tenant_name services
+openstack-config --set /etc/neutron/metadata_agent.ini DEFAULT admin_user neutron
+openstack-config --set /etc/neutron/metadata_agent.ini DEFAULT admin_password neutrontest
+openstack-config --set /etc/neutron/metadata_agent.ini DEFAULT nova_metadata_ip vip-nova
+openstack-config --set /etc/neutron/metadata_agent.ini DEFAULT nova_metadata_port 8775
+openstack-config --set /etc/neutron/metadata_agent.ini DEFAULT metadata_proxy_shared_secret metatest
+
+openstack-config --set /etc/neutron/dhcp_agent.ini    DEFAULT interface_driver neutron.agent.linux.interface.OVSInterfaceDriver
+
+openstack-config --set /etc/neutron/l3_agent.ini DEFAULT interface_driver neutron.agent.linux.interface.OVSInterfaceDriver
+openstack-config --set /etc/neutron/l3_agent.ini DEFAULT metadata_ip vip-nova
+openstack-config --set /etc/neutron/l3_agent.ini DEFAULT external_network_bridge br-ex
+
+# NOTE rhos4-neutron-n or "host" *MUST* match the entry for l3agent below!
+openstack-config --set /etc/neutron/l3_agent.ini DEFAULT host rhos4-neutron-n
+
+openstack-config --set /etc/neutron/agent_watch.ini DEFAULT auth_strategy keystone
+openstack-config --set /etc/neutron/agent_watch.ini DEFAULT auth_url http://vip-keystone:35357/v2.0
+openstack-config --set /etc/neutron/agent_watch.ini DEFAULT auth_region regionOne
+openstack-config --set /etc/neutron/agent_watch.ini DEFAULT admin_tenant_name services
+openstack-config --set /etc/neutron/agent_watch.ini DEFAULT admin_user neutron
+openstack-config --set /etc/neutron/agent_watch.ini DEFAULT admin_password neutrontest
+openstack-config  --set /etc/neutron/agent_watch.ini DEFAULT watched_agents  l3:/var/run/neutron/neutron-l3-agent.pid:/var/run/neutron/neutron-l3-agent.status:host=rhos4-neutron-n
+openstack-config --set /etc/neutron/agent_watch.ini DEFAULT check_interval 20
+openstack-config --set /etc/neutron/agent_watch.ini DEFAULT max_agent_downtime 3600
 
 
-  <div style="height: 140px;">&nbsp;</div>
+chkconfig pacemaker on
+pcs cluster setup --name rhos4-neutron-n rhos4-neutron-n1 rhos4-neutron-n2
+pcs cluster start
 
+sleep 30
 
+pcs stonith create neutron-n1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos4-neutron-n1
 
+pcs stonith create neutron-n2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos4-neutron-n2
 
+pcs resource defaults resource-stickiness=100
+pcs property set start-failure-is-fatal=false
 
+pcs resource create neutron-db-check lsb:neutron-db-check meta failure-timeout=5 --group neutron-agents-pre
 
+# cleanup mess
+pcs resource create neutron-ovs-cleanup lsb:neutron-ovs-cleanup --group neutron-agents-pre
+pcs resource create neutron-netns-cleanup lsb:neutron-netns-cleanup --group neutron-agents-pre
+pcs resource create neutron-agent-watch lsb:neutron-agent-watch --group neutron-agents-pre
 
+pcs resource create neutron-openvswitch-agent lsb:neutron-openvswitch-agent
 
+# A/P for now
+pcs resource create neutron-dhcp-agent lsb:neutron-dhcp-agent
+pcs resource create neutron-l3-agent lsb:neutron-l3-agent
+pcs resource create neutron-metadata-agent lsb:neutron-metadata-agent
 
+pcs constraint order start neutron-agents-pre then neutron-openvswitch-agent
+pcs constraint colocation add neutron-openvswitch-agent with neutron-agents-pre
 
-<div class="fpcontent">
-  <div class="account-container">
+pcs constraint order start neutron-openvswitch-agent then neutron-dhcp-agent
+pcs constraint colocation add neutron-dhcp-agent with neutron-openvswitch-agent
+pcs constraint order start neutron-openvswitch-agent then neutron-l3-agent
+pcs constraint colocation add neutron-l3-agent with neutron-openvswitch-agent
+pcs constraint order start neutron-openvswitch-agent then neutron-metadata-agent
+pcs constraint colocation add neutron-metadata-agent with neutron-openvswitch-agent
 
-  <div id="signin-notice">Guests are not allowed to join that pad. &nbsp;Please sign in.</div
->
-
-  <form id="signin-form" action="/ep/account/sign-in?cont=http%3a%2f%2frhel-ha.etherpad.corp.redhat.com%2fep%2fpad%2fexport%2fRHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-neutron-n%2flatest%3f%26format%3dtxt" method="post">
-  <div class="bb bb-signin">
-    <div class="bb-top">
-      <div class="bb-topleft"><!-- --></div>
-      <div class="bb-topright"><!-- --></div>
-      <div class="bb-title">Sign In to RHEL-HA Red Hat Etherpad</div>
-    </div>
-    <div class="bb-in">
-      
-      <div>
-        <label for="email" id="email-label">Email</label>
-        <input class="textin" type="text" name="email" id="email" value="" />
-        <div style="clear: both;"><!-- --></div>
-      </div>
-
-      <div>
-        <label for="password" id="password-label">Password</label>
-        <input class="passin" type="password" name="password"
-        id="password"
-        value="" />
-        <div style="clear: both;"><!-- --></div>
-      </div>
-
-      <div>
-        <input type="checkbox" id="rememberMe" name="rememberMe"
-           />
-        <label for="rememberMe" id="rememberMe-label">Remember me on this
-        computer</label>
-
-        <button type="submit" class="bluebutton bluebutton120" id="signInButton">
-          Sign In
-        </button>
-        <div style="clear: both;"><!-- --></div>
-      </div>
-
-    </div>
-  </div>
-  </form>
-
-  
-
-  <div id="bottom-text">
-      <a
-      href="/ep/account/forgot-password">Recover lost
-      password</a>
-  </div>
-
-  </div>
-</div>
-
- 
-
-</div>
-
- 
-
-  </body>
-</html>
- 
