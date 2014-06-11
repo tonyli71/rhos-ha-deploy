@@ -70,3 +70,36 @@ neutron router-create router
 neutron router-gateway-set router public_lan
 neutron router-interface-add router internal_subnet
 
+# OUTPUT
+
+[root@rhos5-neutron1 ~]# pcs status
+Cluster name: rhos5-neutron
+Last updated: Wed Jun 11 14:05:44 2014
+Last change: Wed Jun 11 07:12:27 2014 via cibadmin on rhos5-neutron1
+Stack: corosync
+Current DC: rhos5-neutron3 (3) - partition with quorum
+Version: 1.1.10-29.el7-368c726
+3 Nodes configured
+4 Resources configured
+
+
+Online: [ rhos5-neutron1 rhos5-neutron2 rhos5-neutron3 ]
+
+Full list of resources:
+
+ neutron1-fence (stonith:fence_xvm):    Started rhos5-neutron1 
+ neutron2-fence (stonith:fence_xvm):    Started rhos5-neutron3 
+ neutron3-fence (stonith:fence_xvm):    Started rhos5-neutron2 
+ neutron-server (systemd:neutron-server):       Started rhos5-neutron3 
+
+PCSD Status:
+  rhos5-neutron1: Online
+  rhos5-neutron2: Online
+  rhos5-neutron3: Online
+
+Daemon Status:
+  corosync: active/enabled
+  pacemaker: active/enabled
+  pcsd: active/enabled
+
+

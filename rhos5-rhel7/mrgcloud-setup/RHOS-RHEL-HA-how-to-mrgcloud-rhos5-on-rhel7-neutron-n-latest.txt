@@ -43,8 +43,6 @@ openstack-config --set /etc/neutron/plugin.ini OVS integration_bridge br-int
 openstack-config --set /etc/neutron/plugin.ini OVS tunnel_bridge br-tun
 openstack-config   --set /etc/neutron/plugin.ini OVS local_ip $(ip addr show dev eth1   scope global | grep inet | sed -e 's#.*inet ##g' -e 's#/.*##g')
 
-XXXXXX
-
 openstack-config --set /etc/neutron/metadata_agent.ini DEFAULT auth_strategy keystone
 openstack-config --set /etc/neutron/metadata_agent.ini DEFAULT auth_url http://vip-keystone:35357/v2.0
 openstack-config --set /etc/neutron/metadata_agent.ini DEFAULT auth_host vip-keystone
@@ -61,55 +59,72 @@ openstack-config --set /etc/neutron/dhcp_agent.ini    DEFAULT interface_driver n
 openstack-config --set /etc/neutron/l3_agent.ini DEFAULT interface_driver neutron.agent.linux.interface.OVSInterfaceDriver
 openstack-config --set /etc/neutron/l3_agent.ini DEFAULT metadata_ip vip-nova
 openstack-config --set /etc/neutron/l3_agent.ini DEFAULT external_network_bridge br-ex
+openstack-config --set /etc/neutron/l3_agent.ini DEFAULT host rhos5-neutron-n
 
-# NOTE rhos4-neutron-n or "host" *MUST* match the entry for l3agent below!
-openstack-config --set /etc/neutron/l3_agent.ini DEFAULT host rhos4-neutron-n
+systemctl enable pcsd
+systemctl start pcsd
 
-openstack-config --set /etc/neutron/agent_watch.ini DEFAULT auth_strategy keystone
-openstack-config --set /etc/neutron/agent_watch.ini DEFAULT auth_url http://vip-keystone:35357/v2.0
-openstack-config --set /etc/neutron/agent_watch.ini DEFAULT auth_region regionOne
-openstack-config --set /etc/neutron/agent_watch.ini DEFAULT admin_tenant_name services
-openstack-config --set /etc/neutron/agent_watch.ini DEFAULT admin_user neutron
-openstack-config --set /etc/neutron/agent_watch.ini DEFAULT admin_password neutrontest
-openstack-config  --set /etc/neutron/agent_watch.ini DEFAULT watched_agents  l3:/var/run/neutron/neutron-l3-agent.pid:/var/run/neutron/neutron-l3-agent.status:host=rhos4-neutron-n
-openstack-config --set /etc/neutron/agent_watch.ini DEFAULT check_interval 20
-openstack-config --set /etc/neutron/agent_watch.ini DEFAULT max_agent_downtime 3600
+pcs cluster auth rhos5-neutron-n1 rhos5-neutron-n2 rhos5-neutron-n3 -u hacluster -p cluster --force
 
+rhos5-neutron1:
 
-chkconfig pacemaker on
-pcs cluster setup --name rhos4-neutron-n rhos4-neutron-n1 rhos4-neutron-n2
-pcs cluster start
+pcs cluster setup --name rhos5-neutron-n rhos5-neutron-n1 rhos5-neutron-n2 rhos5-neutron-n3
+pcs cluster enable --all
+pcs cluster start --all
 
 sleep 30
 
-pcs stonith create neutron-n1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos4-neutron-n1
-
-pcs stonith create neutron-n2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos4-neutron-n2
-
-pcs resource defaults resource-stickiness=100
-pcs property set start-failure-is-fatal=false
-
-pcs resource create neutron-db-check lsb:neutron-db-check meta failure-timeout=5 --group neutron-agents-pre
+pcs stonith create neutron-n1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos5-neutron-n1
+pcs stonith create neutron-n2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-neutron-n2
+pcs stonith create neutron-n3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-neutron-n3
 
 # cleanup mess
-pcs resource create neutron-ovs-cleanup lsb:neutron-ovs-cleanup --group neutron-agents-pre
-pcs resource create neutron-netns-cleanup lsb:neutron-netns-cleanup --group neutron-agents-pre
-pcs resource create neutron-agent-watch lsb:neutron-agent-watch --group neutron-agents-pre
+# SKIP THIS ONE FOR NOW
+pcs resource create neutron-ovs-cleanup systemd:neutron-ovs-cleanup op monitor start-delay=10s --group neutron-agents
+^^^^^ this one is going to be a problem.... systemd tells me it´s dead after the first run and pcmk will keep retrying. BAD BAD BAD
+# perhaps move as StartPre in some other agent?
 
-pcs resource create neutron-openvswitch-agent lsb:neutron-openvswitch-agent
+pcs resource create neutron-openvswitch-agent systemd:neutron-openvswitch-agent op monitor start-delay=10s --group neutron-agents
 
 # A/P for now
-pcs resource create neutron-dhcp-agent lsb:neutron-dhcp-agent
-pcs resource create neutron-l3-agent lsb:neutron-l3-agent
-pcs resource create neutron-metadata-agent lsb:neutron-metadata-agent
+pcs resource create neutron-dhcp-agent systemd:neutron-dhcp-agent op monitor start-delay=10s --group neutron-agents
+pcs resource create neutron-l3-agent systemd:neutron-l3-agent op monitor start-delay=10s --group neutron-agents
+pcs resource create neutron-metadata-agent systemd:neutron-metadata-agent op monitor start-delay=10s --group neutron-agents
 
-pcs constraint order start neutron-agents-pre then neutron-openvswitch-agent
-pcs constraint colocation add neutron-openvswitch-agent with neutron-agents-pre
+# OUTPUT
 
-pcs constraint order start neutron-openvswitch-agent then neutron-dhcp-agent
-pcs constraint colocation add neutron-dhcp-agent with neutron-openvswitch-agent
-pcs constraint order start neutron-openvswitch-agent then neutron-l3-agent
-pcs constraint colocation add neutron-l3-agent with neutron-openvswitch-agent
-pcs constraint order start neutron-openvswitch-agent then neutron-metadata-agent
-pcs constraint colocation add neutron-metadata-agent with neutron-openvswitch-agent
+[root@rhos5-neutron-n1 ~]# pcs status
+Cluster name: rhos5-neutron-n
+Last updated: Wed Jun 11 14:27:54 2014
+Last change: Wed Jun 11 14:27:29 2014 via cibadmin on rhos5-neutron-n1
+Stack: corosync
+Current DC: rhos5-neutron-n2 (2) - partition with quorum
+Version: 1.1.10-29.el7-368c726
+3 Nodes configured
+7 Resources configured
+
+
+Online: [ rhos5-neutron-n1 rhos5-neutron-n2 rhos5-neutron-n3 ]
+
+Full list of resources:
+
+ neutron-n1-fence       (stonith:fence_xvm):    Started rhos5-neutron-n1 
+ neutron-n2-fence       (stonith:fence_xvm):    Started rhos5-neutron-n2 
+ neutron-n3-fence       (stonith:fence_xvm):    Started rhos5-neutron-n3 
+ Resource Group: neutron-agents
+     neutron-openvswitch-agent  (systemd:neutron-openvswitch-agent):    Started rhos5-neutron-n1 
+     neutron-dhcp-agent (systemd:neutron-dhcp-agent):   Started rhos5-neutron-n1 
+     neutron-l3-agent   (systemd:neutron-l3-agent):     Started rhos5-neutron-n1 
+     neutron-metadata-agent     (systemd:neutron-metadata-agent):       Started rhos5-neutron-n1 
+
+PCSD Status:
+  rhos5-neutron-n1: Online
+  rhos5-neutron-n2: Online
+  rhos5-neutron-n3: Online
+
+Daemon Status:
+  corosync: active/enabled
+  pacemaker: active/enabled
+  pcsd: active/enabled
+
 
