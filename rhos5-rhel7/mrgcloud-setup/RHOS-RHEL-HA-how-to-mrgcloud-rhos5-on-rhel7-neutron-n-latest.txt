@@ -84,6 +84,8 @@ pcs resource create neutron-ovs-cleanup systemd:neutron-ovs-cleanup op monitor s
 ^^^^^ this one is going to be a problem.... systemd tells me it´s dead after the first run and pcmk will keep retrying. BAD BAD BAD
 # perhaps move as StartPre in some other agent?
 
+### pcs op remove <rsc id> <op action <op properties>
+
 pcs resource create neutron-openvswitch-agent systemd:neutron-openvswitch-agent op monitor start-delay=10s --group neutron-agents
 
 # A/P for now
