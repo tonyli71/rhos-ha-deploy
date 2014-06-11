@@ -29,7 +29,17 @@ pcs   resource create  db-fs Filesystem device="mrg-01:/srv/rhos5/db"   director
 
 # On the node running mysql:
 
-cp /etc/my.cnf /var/lib/mysql/
+cat > /var/lib/mysql/my.cnf << EOF
+[mysqld]
+skip-name-resolve=1
+datadir=/var/lib/mysql
+socket=/var/lib/mysql/mysql.sock
+symbolic-links=0
+
+[mysqld_safe]
+log-error=/var/log/mariadb/mariadb.log
+pid-file=/var/run/mariadb/mariadb.pid
+EOF
 
 pcs resource create maria-db mysql config=/var/lib/mysql/my.cnf enable_creation=1 op start timeout=120s --group db-group
 
@@ -38,7 +48,7 @@ drop user ''@'rhos5-db1.vmnet.mpc.lab.eng.bos.redhat.com';
 drop user 'root'@'rhos5-db1.vmnet.mpc.lab.eng.bos.redhat.com';
 GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED by 'mysqltest' WITH GRANT OPTION;
 flush privileges;
-SET GLOBAL max_connect_errors=10000000000;
+SET GLOBAL max_connect_errors=10;
 quit
 mysqladmin flush-hosts
 
@@ -51,6 +61,8 @@ CREATE DATABASE glance;
 GRANT ALL ON glance.* TO 'glance'@'%' IDENTIFIED BY 'glancetest';
 CREATE DATABASE cinder;
 GRANT ALL ON cinder.* TO 'cinder'@'%' IDENTIFIED BY 'cindertest';
+CREATE DATABASE ovs_neutron;
+GRANT ALL ON ovs_neutron.* TO 'neutron'@'%' IDENTIFIED BY 'neutrontest';
 FLUSH PRIVILEGES;
 quit
 

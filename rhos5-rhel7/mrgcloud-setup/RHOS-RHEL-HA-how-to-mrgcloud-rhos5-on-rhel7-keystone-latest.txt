@@ -111,6 +111,12 @@ keystone user-role-add --user swift --role admin --tenant services
 keystone service-create --name swift --type object-store --description "Swift Storage Service"
 keystone endpoint-create --service swift --publicurl "http://vip-swift:8080/v1/AUTH_\$(tenant_id)s" --adminurl "http://vip-swift:8080/v1" --internalurl "http://vip-swift:8080/v1/AUTH_\$(tenant_id)s"
 
+# neutron
+keystone user-create --name neutron --pass neutrontest
+keystone user-role-add --user neutron --role admin --tenant services
+keystone service-create --name neutron --type network --description "OpenStack Networking Service"
+keystone endpoint-create --service neutron --publicurl "http://vip-neutron:9696" --adminurl "http://vip-neutron:9696" --internalurl "http://vip-neutron:9696"
+
 # others
 
 # TEST

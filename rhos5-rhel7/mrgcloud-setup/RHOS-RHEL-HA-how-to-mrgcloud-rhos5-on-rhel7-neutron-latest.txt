@@ -1,0 +1,72 @@
+rhos5-neutron1|rhos5-neutron2|rhos5-neutron3:
+
+yum install -y openstack-neutron openstack-neutron-openvswitch openstack-utils openstack-selinux
+
+openstack-config --set /etc/neutron/neutron.conf DEFAULT auth_strategy keystone
+openstack-config --set /etc/neutron/neutron.conf keystone_authtoken auth_host vip-keystone
+openstack-config --set /etc/neutron/neutron.conf keystone_authtoken admin_tenant_name services
+openstack-config --set /etc/neutron/neutron.conf keystone_authtoken admin_user neutron
+openstack-config --set /etc/neutron/neutron.conf keystone_authtoken admin_password neutrontest
+
+openstack-config --set /etc/neutron/neutron.conf database connection mysql://neutron:neutrontest@vip-mysql:3306/ovs_neutron
+openstack-config --set /etc/neutron/neutron.conf database max_retries -1
+
+openstack-config --set /etc/neutron/neutron.conf DEFAULT rabbit_host vip-rabbitmq
+
+openstack-config --set /etc/neutron/neutron.conf DEFAULT notification_driver neutron.openstack.common.notifier.rpc_notifier
+
+# do we need this at all?
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_url http://vip-nova:8774
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_region_name regionOne
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_username compute
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_tenant_id 72632ec3e65f49bc96754dddc0fd0d83
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_password novatest
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_auth_url "http://vip-nova:8774/v2/\$(tenant_id)s"
+
+openstack-config --set /etc/neutron/neutron.conf DEFAULT core_plugin  neutron.plugins.openvswitch.ovs_neutron_plugin.OVSNeutronPluginV2
+
+ln -s /etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini /etc/neutron/plugin.ini
+
+openstack-config --set /etc/neutron/plugin.ini database connection mysql://neutron:neutrontest@vip-mysql/ovs_neutron
+openstack-config --set /etc/neutron/plugin.ini OVS enable_tunneling True
+openstack-config --set /etc/neutron/plugin.ini OVS tunnel_id_ranges 1:1000
+openstack-config --set /etc/neutron/plugin.ini OVS tenant_network_type gre
+
+rhos5-neutron1
+
+# required when installing the DB manually
+neutron-db-manage --config-file /usr/share/neutron/neutron-dist.conf --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugin.ini stamp icehouse
+
+rhos5-neutron1|rhos5-neutron2|rhos5-neutron3:
+
+systemctl enable pcsd
+systemctl start pcsd
+
+pcs cluster auth rhos5-neutron1 rhos5-neutron2 rhos5-neutron3 -u hacluster -p cluster --force
+
+rhos5-neutron1:
+
+pcs cluster setup --name rhos5-neutron rhos5-neutron1 rhos5-neutron2 rhos5-neutron3
+pcs cluster enable --all
+pcs cluster start --all
+
+sleep 30
+
+pcs stonith create neutron1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos5-neutron1
+pcs stonith create neutron2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-neutron2
+pcs stonith create neutron3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-neutron3
+
+pcs resource create neutron-server systemd:neutron-server op monitor start-delay=10s
+
+# TEST/create your first network
+
+. /srv/rhos5/configs/keystonerc_admin
+
+neutron net-create internal_lan
+neutron subnet-create --ip_version 4 --gateway 192.168.100.1 --name "internal_subnet" internal_lan 192.168.100.0/24
+neutron net-create public_lan --router:external=True
+neutron  subnet-create --gateway 10.16.151.254 --allocation-pool  start=10.16.144.76,end=10.16.144.83 --disable-dhcp --name public_subnet  public_lan 10.16.144.0/21
+neutron router-create router
+neutron router-gateway-set router public_lan
+neutron router-interface-add router internal_subnet
+
