@@ -117,6 +117,13 @@ keystone user-role-add --user neutron --role admin --tenant services
 keystone service-create --name neutron --type network --description "OpenStack Networking Service"
 keystone endpoint-create --service neutron --publicurl "http://vip-neutron:9696" --adminurl "http://vip-neutron:9696" --internalurl "http://vip-neutron:9696"
 
+# nova
+keystone user-create --name compute --pass novatest
+keystone user-role-add --user compute --role admin --tenant services
+keystone service-create --name compute --type compute --description "OpenStack Compute Service"
+keystone endpoint-create  --service compute --publicurl "http://vip-nova:8774/v2/\$(tenant_id)s" --adminurl "http://vip-nova:8774/v2/\$(tenant_id)s" --internalurl "http://vip-nova:8774/v2/\$(tenant_id)s"
+
+
 # others
 
 # TEST

@@ -42,7 +42,7 @@ http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rh
 rhos5-neutron-n1|rhos5-neutron-n2|rhos5-neutron-n3 (untested - need nova)
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-neutron-n
 
-rhos5-nova1|rhos5-nova2|rhos5-nova3 (WIP)
+rhos5-nova1|rhos5-nova2|rhos5-nova3
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-nova
 
 rhos5-horizon1|rhos5-horizon2|rhos5-horizon3

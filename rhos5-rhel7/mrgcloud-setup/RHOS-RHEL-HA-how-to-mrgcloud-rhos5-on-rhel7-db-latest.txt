@@ -62,6 +62,8 @@ CREATE DATABASE cinder;
 GRANT ALL ON cinder.* TO 'cinder'@'%' IDENTIFIED BY 'cindertest';
 CREATE DATABASE ovs_neutron;
 GRANT ALL ON ovs_neutron.* TO 'neutron'@'%' IDENTIFIED BY 'neutrontest';
+CREATE DATABASE nova;
+GRANT ALL ON nova.* TO 'nova'@'%' IDENTIFIED BY 'novatest';
 FLUSH PRIVILEGES;
 quit
 

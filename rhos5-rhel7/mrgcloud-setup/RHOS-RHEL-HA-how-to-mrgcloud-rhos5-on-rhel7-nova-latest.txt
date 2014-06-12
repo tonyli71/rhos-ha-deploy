@@ -2,29 +2,36 @@ rhos5-nova1|rhos5-nova2|rhos5-nova3:
 
 yum install -y openstack-nova-console openstack-nova-novncproxy openstack-utils openstack-nova-api openstack-nova-conductor openstack-nova-scheduler python-cinderclient python-memcached
 
-XXXX 
+openstack-config --set /etc/nova/nova.conf DEFAULT memcached_servers rhos5-memcache1:11211,rhos5-memcache2:11211,rhos5-memcache3:11211
 
-openstack-config --set /etc/nova/nova.conf DEFAULT memcached_servers rhos4-memcache1:11211,rhos4-memcache2:11211
 openstack-config   --set /etc/nova/nova.conf DEFAULT vncserver_proxyclient_address $(ip   addr show dev eth1 scope global | grep inet | sed -e 's#.*inet ##g' -e   's#/.*##g')
 openstack-config --set /etc/nova/nova.conf DEFAULT vncserver_listen 0.0.0.0
 openstack-config --set /etc/nova/nova.conf DEFAULT novncproxy_base_url http://mrg-01.mpc.lab.eng.bos.redhat.com:6080/vnc_auto.html
-openstack-config --set /etc/nova/nova.conf DEFAULT sql_connection mysql://nova:novatest@vip-mysql/nova
+
+openstack-config --set /etc/nova/nova.conf database connection mysql://nova:novatest@vip-mysql/nova
+openstack-config --set /etc/nova/nova.conf database max_retries -1
+
 openstack-config --set /etc/nova/nova.conf DEFAULT auth_strategy keystone
-openstack-config --set /etc/nova/nova.conf DEFAULT rpc_backend nova.openstack.common.rpc.impl_qpid
-openstack-config --set /etc/nova/nova.conf DEFAULT qpid_hostname vip-qpid
+
+openstack-config --set /etc/nova/nova.conf DEFAULT rabbit_host vip-rabbitmq
+
 openstack-config --set /etc/nova/nova.conf DEFAULT metadata_host vip-nova
 openstack-config --set /etc/nova/nova.conf DEFAULT metadata_listen 0.0.0.0
 openstack-config --set /etc/nova/nova.conf DEFAULT metadata_listen_port 8775
 openstack-config --set /etc/nova/nova.conf DEFAULT service_neutron_metadata_proxy True
 openstack-config --set /etc/nova/nova.conf DEFAULT neutron_metadata_proxy_shared_secret metatest
+
 openstack-config --set /etc/nova/nova.conf DEFAULT glance_host vip-glance
-openstack-config --set /etc/nova/nova.conf DEFAULT network_api_class nova.network.neutronv2.api.API
+
+# openstack-config --set /etc/nova/nova.conf DEFAULT network_api_class nova.network.neutronv2.api.API
 openstack-config --set /etc/nova/nova.conf DEFAULT neutron_url http://vip-neutron:9696/
 openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_tenant_name services
 openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_username neutron
 openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_password neutrontest
 openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_auth_url http://vip-keystone:35357/v2.0
+
 openstack-config --set /etc/nova/nova.conf DEFAULT firewall_driver nova.virt.firewall.NoopFirewallDriver
+
 openstack-config --set /etc/nova/nova.conf DEFAULT libvirt_vif_driver nova.virt.libvirt.vif.LibvirtHybridOVSBridgeDriver
 
 openstack-config --set /etc/nova/api-paste.ini filter:authtoken auth_host vip-keystone
@@ -32,38 +39,36 @@ openstack-config --set /etc/nova/api-paste.ini filter:authtoken admin_tenant_nam
 openstack-config --set /etc/nova/api-paste.ini filter:authtoken admin_user compute
 openstack-config --set /etc/nova/api-paste.ini filter:authtoken admin_password novatest
 
-rhos4-nova1
+rhos5-nova1:
 
-. /srv/rhos/configs/keystonerc_admin
-keystone user-create --name compute --pass novatest
-keystone user-role-add --user compute --role admin --tenant services
-keystone service-create --name compute --type compute --description "OpenStack Compute Service"
-keystone endpoint-create  --service compute --publicurl "http://vip-nova:8774/v2/\$(tenant_id)s" --adminurl "http://vip-nova:8774/v2/\$(tenant_id)s" --internalurl "http://vip-nova:8774/v2/\$(tenant_id)s"
-
-mysql --user=root --password=mysqltest --host=vip-mysql
-CREATE DATABASE nova;
-GRANT ALL ON nova.* TO 'nova'@'%' IDENTIFIED BY 'novatest';
-FLUSH PRIVILEGES;
-quit
 su nova -s /bin/sh -c "nova-manage db sync"
 
-rhos4-nova1|rhos4-nova2
+rhos5-nova1|rhos5-nova2|rhos5-nova3:
 
-chkconfig pacemaker on
-pcs cluster setup --name rhos4-nova rhos4-nova1 rhos4-nova2
-pcs cluster start
+systemctl enable pcsd
+systemctl start pcsd
+
+pcs cluster auth rhos5-nova1 rhos5-nova2 rhos5-nova3 -u hacluster -p cluster --force
+
+rhos5-nova1:
+
+pcs cluster setup --name rhos5-nova rhos5-nova1 rhos5-nova2 rhos5-nova3
+pcs cluster enable --all
+pcs cluster start --all
 
 sleep 30
 
-pcs stonith create nova1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos4-nova1
+pcs stonith create nova1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos5-nova1
+pcs stonith create nova2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-nova2
+pcs stonith create nova3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-nova3
 
-pcs stonith create nova2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos4-nova2
+pcs resource create nova-consoleauth systemd:openstack-nova-consoleauth  op monitor start-delay=10s --clone
+pcs resource create nova-novncproxy systemd:openstack-nova-novncproxy op monitor start-delay=10s --clone
+pcs resource create nova-api systemd:openstack-nova-api op monitor start-delay=10s --clone
 
-pcs resource create nova-consoleauth lsb:openstack-nova-consoleauth --clone
-pcs resource create nova-novncproxy lsb:openstack-nova-novncproxy --clone
-pcs resource create nova-api lsb:openstack-nova-api --clone
-pcs resource create nova-scheduler lsb:openstack-nova-scheduler
-pcs resource create nova-conductor lsb:openstack-nova-conductor --clone
+# A/P for now
+pcs resource create nova-scheduler systemd:openstack-nova-scheduler op monitor start-delay=10s
+pcs resource create nova-conductor systemd:openstack-nova-conductor op monitor start-delay=10s --clone
 
 pcs constraint order start nova-consoleauth-clone then nova-novncproxy-clone
 pcs constraint colocation add nova-novncproxy with nova-consoleauth
@@ -74,7 +79,47 @@ pcs constraint colocation add nova-scheduler with nova-api
 pcs constraint order start nova-scheduler then nova-conductor-clone
 
 # TEST
-. /srv/rhos/configs/keystonerc_admin
+. /srv/rhos5/configs/keystonerc_admin
 nova usage
 nova usage-list
+
+# OUTPUT
+
+[root@rhos5-nova2 ~]# pcs status
+Cluster name: rhos5-nova
+Last updated: Thu Jun 12 06:14:01 2014
+Last change: Thu Jun 12 06:13:17 2014 via cibadmin on rhos5-nova2
+Stack: corosync
+Current DC: rhos5-nova2 (2) - partition with quorum
+Version: 1.1.10-29.el7-368c726
+3 Nodes configured
+16 Resources configured
+
+
+Online: [ rhos5-nova1 rhos5-nova2 rhos5-nova3 ]
+
+Full list of resources:
+
+ nova1-fence    (stonith:fence_xvm):    Started rhos5-nova1 
+ nova2-fence    (stonith:fence_xvm):    Started rhos5-nova2 
+ nova3-fence    (stonith:fence_xvm):    Started rhos5-nova3 
+ Clone Set: nova-consoleauth-clone [nova-consoleauth]
+     Started: [ rhos5-nova1 rhos5-nova2 rhos5-nova3 ]
+ Clone Set: nova-novncproxy-clone [nova-novncproxy]
+     Started: [ rhos5-nova1 rhos5-nova2 rhos5-nova3 ]
+ Clone Set: nova-api-clone [nova-api]
+     Started: [ rhos5-nova1 rhos5-nova2 rhos5-nova3 ]
+ nova-scheduler (systemd:openstack-nova-scheduler):     Started rhos5-nova1 
+ Clone Set: nova-conductor-clone [nova-conductor]
+     Started: [ rhos5-nova1 rhos5-nova2 rhos5-nova3 ]
+
+PCSD Status:
+  rhos5-nova1: Online
+  rhos5-nova2: Online
+  rhos5-nova3: Online
+
+Daemon Status:
+  corosync: active/enabled
+  pacemaker: active/enabled
+  pcsd: active/enabled
 
