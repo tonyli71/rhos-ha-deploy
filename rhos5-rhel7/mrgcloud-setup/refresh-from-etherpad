@@ -20,4 +20,4 @@ today="$(date)"
 git add *
 [ -z "$commitmsg" ] && commitmsg="Automatic etherpad sync at $today"
 git commit -a -m "$commitmsg"
-#git push
+git push
