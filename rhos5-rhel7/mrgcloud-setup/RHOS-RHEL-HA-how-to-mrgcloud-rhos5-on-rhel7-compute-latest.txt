@@ -1,0 +1,132 @@
+mrg-02|mrg-03||mrg-04
+
+yum update -y
+
+yum install -y openstack-nova-compute openstack-utils python-cinder openstack-neutron-openvswitch openstack-ceilometer-compute
+
+systemctl enable openvswitch
+systemctl start openvswitch
+
+ovs-vsctl add-br br-int
+
+systemctl stop libvirtd
+systemctl disable libvirtd
+
+openstack-config --set /etc/nova/nova.conf DEFAULT memcached_servers rhos5-memcache1:11211,rhos5-memcache2:11211,rhos5-memcache3:11211
+
+openstack-config    --set /etc/nova/nova.conf DEFAULT vncserver_proxyclient_address $(ip    addr show dev eth1 scope global | grep inet | sed -e 's#.*inet ##g' -e    's#/.*##g')
+openstack-config --set /etc/nova/nova.conf DEFAULT vncserver_listen 0.0.0.0
+openstack-config --set /etc/nova/nova.conf DEFAULT novncproxy_base_url http://mrg-01.mpc.lab.eng.bos.redhat.com:6080/vnc_auto.html
+
+openstack-config --set /etc/nova/nova.conf database connection mysql://nova:novatest@vip-mysql/nova
+openstack-config --set /etc/nova/nova.conf database max_retries -1
+
+openstack-config --set /etc/nova/nova.conf DEFAULT auth_strategy keystone
+
+openstack-config --set /etc/nova/nova.conf DEFAULT rabbit_host vip-rabbitmq
+
+openstack-config --set /etc/nova/nova.conf DEFAULT metadata_host vip-nova
+openstack-config --set /etc/nova/nova.conf DEFAULT metadata_listen 0.0.0.0
+openstack-config --set /etc/nova/nova.conf DEFAULT metadata_listen_port 8775
+openstack-config --set /etc/nova/nova.conf DEFAULT service_neutron_metadata_proxy True
+openstack-config --set /etc/nova/nova.conf DEFAULT neutron_metadata_proxy_shared_secret metatest
+
+openstack-config --set /etc/nova/nova.conf DEFAULT glance_host vip-glance
+
+openstack-config --set /etc/nova/nova.conf DEFAULT network_api_class nova.network.neutronv2.api.API
+openstack-config --set /etc/nova/nova.conf DEFAULT neutron_url http://vip-neutron:9696/
+openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_tenant_name services
+openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_username neutron
+openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_password neutrontest
+openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_auth_url http://vip-keystone:35357/v2.0
+
+openstack-config --set /etc/nova/nova.conf DEFAULT firewall_driver nova.virt.firewall.NoopFirewallDriver
+
+openstack-config --set /etc/nova/nova.conf DEFAULT libvirt_vif_driver nova.virt.libvirt.vif.LibvirtHybridOVSBridgeDriver
+
+openstack-config --set /etc/nova/api-paste.ini filter:authtoken auth_host vip-keystone
+openstack-config --set /etc/nova/api-paste.ini filter:authtoken admin_tenant_name services
+openstack-config --set /etc/nova/api-paste.ini filter:authtoken admin_user compute
+openstack-config --set /etc/nova/api-paste.ini filter:authtoken admin_password novatest
+
+
+openstack-config --set /etc/neutron/neutron.conf DEFAULT auth_strategy keystone
+openstack-config --set /etc/neutron/neutron.conf keystone_authtoken auth_host vip-keystone
+openstack-config --set /etc/neutron/neutron.conf keystone_authtoken admin_tenant_name services
+openstack-config --set /etc/neutron/neutron.conf keystone_authtoken admin_user neutron
+openstack-config --set /etc/neutron/neutron.conf keystone_authtoken admin_password neutrontest
+
+openstack-config --set /etc/neutron/neutron.conf database connection mysql://neutron:neutrontest@vip-mysql:3306/ovs_neutron
+openstack-config --set /etc/neutron/neutron.conf database max_retries -1
+
+openstack-config --set /etc/neutron/neutron.conf DEFAULT rabbit_host vip-rabbitmq
+
+openstack-config --set /etc/neutron/neutron.conf DEFAULT notification_driver neutron.openstack.common.notifier.rpc_notifier
+
+# do we need this at all?
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_url http://vip-nova:8774
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_region_name regionOne
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_username compute
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_tenant_id 72632ec3e65f49bc96754dddc0fd0d83
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_password novatest
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_auth_url "http://vip-nova:8774/v2/\$(tenant_id)s"
+
+openstack-config   --set /etc/neutron/neutron.conf DEFAULT core_plugin    neutron.plugins.openvswitch.ovs_neutron_plugin.OVSNeutronPluginV2
+
+ln -s /etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini /etc/neutron/plugin.ini
+
+openstack-config --set /etc/neutron/plugin.ini database connection mysql://neutron:neutrontest@vip-mysql/ovs_neutron
+openstack-config --set /etc/neutron/plugin.ini OVS enable_tunneling True
+openstack-config --set /etc/neutron/plugin.ini OVS tunnel_id_ranges 1:1000
+openstack-config --set /etc/neutron/plugin.ini OVS tenant_network_type gre
+
+openstack-config --set /etc/neutron/plugin.ini OVS integration_bridge br-int
+openstack-config --set /etc/neutron/plugin.ini OVS tunnel_bridge br-tun
+openstack-config    --set /etc/neutron/plugin.ini OVS local_ip $(ip addr show dev vmnet0    scope global | grep inet | sed -e 's#.*inet ##g' -e 's#/.*##g')
+
+# ceilometer TBD!!!
+openstack-config --set /etc/nova/nova.conf DEFAULT instance_usage_audit True
+openstack-config --set /etc/nova/nova.conf DEFAULT instance_usage_audit_period hour
+openstack-config --set /etc/nova/nova.conf DEFAULT notify_on_state_change vm_and_task_state
+openstack-config --set /etc/nova/nova.conf DEFAULT notification_driver nova.openstack.common.notifier.rpc_notifier
+openstack-config --set /etc/nova/nova.conf DEFAULT notification_driver ceilometer.compute.nova_notifier
+
+openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken auth_host vip-keystone
+openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken auth_port 35357
+openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken auth_protocol http
+openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken admin_tenant_name services
+openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken admin_user ceilometer
+openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken admin_password ceilometertest
+openstack-config   --set /etc/ceilometer/ceilometer.conf keystone_authtoken   memcached_servers rhos4-memcache1:11211,rhos4-memcache2:11211
+openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT qpid_hostname vip-qpid
+openstack-config --set /etc/ceilometer/ceilometer.conf publisher_rpc metering_secret ceilometersecret
+openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT os_auth_url http://vip-keystone:35357/v2.0
+openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT os_username ceilometer
+openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT os_tenant_name services
+openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT os_password ceilometertest
+openstack-config   --set  /etc/ceilometer/ceilometer.conf database connection    mongodb://rhos4-mongodb1,rhos4-mongodb2,rhos4-mongodb3,rhos4-mongodb4:27017/ceilometer?replicaSet=ceilometer
+openstack-config --set /etc/neutron/neutron.conf DEFAULT notification_driver neutron.openstack.common.notifier.rpc_notifier
+
+systemctl enable pcsd
+systemctl start pcsd
+
+echo cluster | passwd --stdin hacluster
+pcs cluster auth $(hostname -s) -u hacluster -p cluster --force
+
+pcs cluster setup --name $(hostname -s)-compute $(hostname -s)
+pcs cluster enable --all
+pcs cluster start --all
+
+sleep 30
+
+# hack!! can´t get ipmi to work from localhost to localhost!!!!
+pcs property set stonith-enabled=false
+pcs property set start-failure-is-fatal=false
+
+pcs resource create neutron-openvswitch-agent systemd:neutron-openvswitch-agent op monitor start-delay=10s --group computenode
+pcs resource create libvirtd systemd:libvirtd op monitor start-delay=10s --group computenode
+# ceilometer on hold!
+# pcs resource create ceilometer-compute systemd:openstack-ceilometer-compute op monitor start-delay=10s --group computenode
+pcs resource create nova-compute systemd:openstack-nova-compute op monitor start-delay=10s --group computenode
+
+

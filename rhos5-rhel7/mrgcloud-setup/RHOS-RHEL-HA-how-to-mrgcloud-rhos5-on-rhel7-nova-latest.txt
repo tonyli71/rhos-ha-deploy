@@ -23,7 +23,7 @@ openstack-config --set /etc/nova/nova.conf DEFAULT neutron_metadata_proxy_shared
 
 openstack-config --set /etc/nova/nova.conf DEFAULT glance_host vip-glance
 
-# openstack-config --set /etc/nova/nova.conf DEFAULT network_api_class nova.network.neutronv2.api.API
+openstack-config --set /etc/nova/nova.conf DEFAULT network_api_class nova.network.neutronv2.api.API
 openstack-config --set /etc/nova/nova.conf DEFAULT neutron_url http://vip-neutron:9696/
 openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_tenant_name services
 openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_username neutron
@@ -33,6 +33,8 @@ openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_auth_url http:/
 openstack-config --set /etc/nova/nova.conf DEFAULT firewall_driver nova.virt.firewall.NoopFirewallDriver
 
 openstack-config --set /etc/nova/nova.conf DEFAULT libvirt_vif_driver nova.virt.libvirt.vif.LibvirtHybridOVSBridgeDriver
+
+openstack-config --set /etc/nova/nova.conf conductor use_local false
 
 openstack-config --set /etc/nova/api-paste.ini filter:authtoken auth_host vip-keystone
 openstack-config --set /etc/nova/api-paste.ini filter:authtoken admin_tenant_name services

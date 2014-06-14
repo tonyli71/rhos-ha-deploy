@@ -42,12 +42,20 @@ http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rh
 rhos5-neutron-n1|rhos5-neutron-n2|rhos5-neutron-n3 (untested - need nova)
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-neutron-n
 
-rhos5-nova1|rhos5-nova2|rhos5-nova3
+rhos5-nova1|rhos5-nova2|rhos5-nova3 (still not working)
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-nova
 
 rhos5-horizon1|rhos5-horizon2|rhos5-horizon3
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-horizon
 
+# missing heat
+
 rhos5-mongodb1|rhos5-mongodb2|rhos5-mongodb3
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-mongodb
+
+# missing ceilometer
+
+compute nodes (single node clusters - still under testing/integration with nova/neutron)
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-compute
+
 

@@ -1,4 +1,4 @@
-mrg-01|07|08|09
+mrg-01|02|03|04|07|08|09
 
 public visible ip addresses:
 mrg-vip76.mpc.lab.eng.bos.redhat.com
@@ -9,6 +9,8 @@ mrg-vip80.mpc.lab.eng.bos.redhat.com
 mrg-vip81.mpc.lab.eng.bos.redhat.com
 mrg-vip82.mpc.lab.eng.bos.redhat.com
 mrg-vip83.mpc.lab.eng.bos.redhat.com
+
+if [ ! -d /usr/lib/systemd ]; then
 
 cat > /etc/yum.repos.d/custom.repo << EOF
 [rhel6.5]
@@ -36,13 +38,39 @@ enabled=1
 gpgcheck=0
 EOF
 
+else
+
+cat > /etc/yum.repos.d/rhel7.repo << EOF
+[rhel7]
+name=rhel7
+baseurl=http://download.eng.rdu2.redhat.com/rel-eng/latest-RHEL-7/compose/Server/x86_64/os/
+gpgcheck=0
+enabled=1
+
+[rhel7-ha]
+name=rhel7-ha
+baseurl=http://download.eng.rdu2.redhat.com/rel-eng/latest-RHEL-7/compose/Server/x86_64/os/addons/HighAvailability/
+gpgcheck=0
+enabled=1
+EOF
+
+cat > /etc/yum.repos.d/osp5.repo << EOF
+[OpenStack-5.0-RHEL-7-Puddle]
+name=OpenStack-5.0-RHEL-7-Puddle
+baseurl=http://download.lab.bos.redhat.com/rel-eng/OpenStack/5.0-RHEL-7/latest/\$basearch/os
+gpgcheck=0
+enabled=1
+EOF
+
+fi
+
 yum clean all
 yum update -y
 
 yum install -y pacemaker fence-agents resource-agents pcs cman ccs libvirt qemu-kvm
 sed -i -e 's/=enforcing/=disabled/g' /etc/sysconfig/selinux
 sed -i -e 's/=enforcing/=disabled/g' /etc/selinux/config
-sed -i -e 's/^0/#0/g' /etc/cron.d/rhn-virtualization.cron
+[ -f /etc/cron.d/rhn-virtualization.cron ] && sed -i -e 's/^0/#0/g' /etc/cron.d/rhn-virtualization.cron
 chkconfig acpid off
 chkconfig iptables off
 chkconfig ip6tables off
@@ -54,15 +82,20 @@ lastoct="$(hostname -s | sed -e 's#mrg-0##g')"
 
 cat > /etc/sysconfig/network-scripts/ifcfg-ext0 << EOF
 DEVICE=ext0
+NAME=ext0
 TYPE=Bridge
 BOOTPROTO=dhcp
 ONBOOT=yes
 IPV6INIT=yes
 IPV6_AUTOCONF=yes
+PEERDNS=no
+DNS1=10.16.144.34
+DOMAIN=vmnet.mpc.lab.eng.bos.redhat.com mpc.lab.eng.bos.redhat.com
 EOF
 
 cat > /etc/sysconfig/network-scripts/ifcfg-vmnet0 << EOF
 DEVICE=vmnet0
+NAME=vmnet0
 TYPE=Bridge
 BOOTPROTO=static
 ONBOOT=yes
@@ -80,6 +113,7 @@ DEVICE=eth0
 BOOTPROTO=none
 ONBOOT=yes
 BRIDGE=ext0
+NAME=eth0
 EOF
 
 cat > /etc/sysconfig/network-scripts/ifcfg-eth1 << EOF
@@ -87,12 +121,14 @@ DEVICE=eth1
 BOOTPROTO=none
 ONBOOT=yes
 BRIDGE=vmnet0
+NAME=eth1
 EOF
 
 else
 
 cat > /etc/sysconfig/network-scripts/ifcfg-em1 << EOF
 DEVICE=em1
+NAME=em1
 BOOTPROTO=none
 ONBOOT=yes
 BRIDGE=ext0
@@ -100,6 +136,7 @@ EOF
 
 cat > /etc/sysconfig/network-scripts/ifcfg-em2 << EOF
 DEVICE=em2
+NAME=em2
 BOOTPROTO=none
 ONBOOT=yes
 BRIDGE=vmnet0
@@ -111,14 +148,17 @@ echo "echo 1 > /sys/class/net/ext0/bridge/multicast_querier" >> /etc/rc.local
 echo "echo 1 > /sys/class/net/vmnet0/bridge/multicast_querier" >> /etc/rc.local
 /etc/rc.local
 
-
 umount /home
 sed -i -e 's#.*home.*##g' /etc/fstab 
 lvremove -f /dev/mapper/*home
 lvresize -f -l+100%FREE /dev/mapper/*root
-resize2fs /dev/mapper/*root
+resize2fs /dev/mapper/*root || xfs_growfs /dev/mapper/*-root
 
-sed -i -e 's#ip_forward.*#ip_forward = 1#g' /etc/sysctl.conf
+if grep -q ip_forward /etc/sysctl.conf; then
+    sed -i -e 's#ip_forward.*#ip_forward = 1#g' /etc/sysctl.conf
+else
+   echo "ip_forward = 1" >> /etc/sysctl.conf
+fi
 
 reboot
 

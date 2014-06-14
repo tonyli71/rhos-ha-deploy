@@ -1,36 +1,62 @@
 rhos5-neutron1|rhos5-neutron2|rhos5-neutron3:
 
-yum install -y openstack-neutron openstack-neutron-openvswitch openstack-utils openstack-selinux
+yum install -y openstack-neutron openstack-neutron-openvswitch openstack-neutron-ml2 openstack-utils openstack-selinux
 
 openstack-config --set /etc/neutron/neutron.conf DEFAULT auth_strategy keystone
 openstack-config --set /etc/neutron/neutron.conf keystone_authtoken auth_host vip-keystone
 openstack-config --set /etc/neutron/neutron.conf keystone_authtoken admin_tenant_name services
 openstack-config --set /etc/neutron/neutron.conf keystone_authtoken admin_user neutron
 openstack-config --set /etc/neutron/neutron.conf keystone_authtoken admin_password neutrontest
-
-openstack-config --set /etc/neutron/neutron.conf database connection mysql://neutron:neutrontest@vip-mysql:3306/ovs_neutron
+# we may want to rename ovs_neutron to just 'ovs' everywhere
+openstack-config --set /etc/neutron/neutron.conf database connection  mysql://neutron:neutrontest@vip-mysql:3306/ovs_neutron
 openstack-config --set /etc/neutron/neutron.conf database max_retries -1
 
 openstack-config --set /etc/neutron/neutron.conf DEFAULT rabbit_host vip-rabbitmq
 
 openstack-config --set /etc/neutron/neutron.conf DEFAULT notification_driver neutron.openstack.common.notifier.rpc_notifier
 
-# do we need this at all?
-openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_url http://vip-nova:8774
+# do we need this at all?, yes we do, it's for talking back to nova
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_url http://vip-nova:8774/v2
 openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_region_name regionOne
-openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_username compute
 openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_tenant_id 72632ec3e65f49bc96754dddc0fd0d83
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_username compute
 openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_password novatest
-openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_auth_url "http://vip-nova:8774/v2/\$(tenant_id)s"
+#WORKAROUND
+#openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_username admin
+#openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_password keystonetest
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_auth_url http://vip-keystone:35357/v2.0
 
-openstack-config --set /etc/neutron/neutron.conf DEFAULT core_plugin  neutron.plugins.openvswitch.ovs_neutron_plugin.OVSNeutronPluginV2
+openstack-config --set /etc/neutron/neutron.conf DEFAULT notify_nova_on_port_status_changes  True
+openstack-config --set /etc/neutron/neutron.conf DEFAULT notify_nova_on_port_data_changes  True
 
-ln -s /etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini /etc/neutron/plugin.ini
+openstack-config --set /etc/neutron/neutron.conf DEFAULT core_plugin  neutron.plugins.ml2.plugin.Ml2Plugin
 
-openstack-config --set /etc/neutron/plugin.ini database connection mysql://neutron:neutrontest@vip-mysql/ovs_neutron
-openstack-config --set /etc/neutron/plugin.ini OVS enable_tunneling True
-openstack-config --set /etc/neutron/plugin.ini OVS tunnel_id_ranges 1:1000
-openstack-config --set /etc/neutron/plugin.ini OVS tenant_network_type gre
+openstack-config --set /etc/neutron/neutron.conf DEFAULT service_plugins neutron.services.l3_router.l3_router_plugin.L3RouterPlugin,neutron.services.firewall.fwaas_plugin.FirewallPlugin
+
+openstack-config --set /etc/neutron/neutron.conf DEFAULT router_scheduler_driver neutron.scheduler.l3_agent_scheduler.ChanceScheduler
+
+# we could use this to make the DHCP-agents A/A (disabled)
+# openstack-config --set /etc/neutron/neutron.conf DEFAULT dhcp_agents_per_network 3
+
+# we could use this to make scalability better (disabled)
+# openstack-config --set /etc/neutron/neutron.conf DEFAULT api_workers  4
+# openstack-config --set /etc/neutron/neutron.conf DEFAULT rpc_workers  4
+
+rm -rf /etc/neutron/plugin.ini  #remove this later
+ln -s /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugin.ini
+
+openstack-config --set /etc/neutron/plugin.ini ml2 type_drivers local,gre,flat,vxlan,vlan
+openstack-config --set /etc/neutron/plugin.ini ml2 tenant_network_types vxlan
+openstack-config --set /etc/neutron/plugin.ini ml2 mechanism_drivers openvswitch
+openstack-config --set /etc/neutron/plugin.ini ml2_type_flat flat_networks *
+openstack-config --set /etc/neutron/plugin.ini ml2_type_gre tunnel_id_ranges 10:10000
+openstack-config --set /etc/neutron/plugin.ini ml2_type_vxlan vni_ranges 10:10000
+openstack-config --set /etc/neutron/plugin.ini ml2_type_vxlan vxlan_group 224.0.0.1
+openstack-config --set /etc/neutron/plugin.ini securitygroup enable_security_group True
+# THIS ONE IS WRONG BUT JUST COPYING MY PACKSTACK DEPL ATM
+openstack-config --set /etc/neutron/plugin.ini securitygroup firewall_driver True
+# openstack-config --set /etc/neutron/plugin.ini securitygroup firewall_driver neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver  
+
 
 rhos5-neutron1
 
