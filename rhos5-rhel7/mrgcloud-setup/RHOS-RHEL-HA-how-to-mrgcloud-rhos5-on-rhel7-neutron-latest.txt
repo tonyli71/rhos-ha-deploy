@@ -19,11 +19,11 @@ openstack-config --set /etc/neutron/neutron.conf DEFAULT notification_driver neu
 openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_url http://vip-nova:8774/v2
 openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_region_name regionOne
 openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_tenant_id 72632ec3e65f49bc96754dddc0fd0d83
-openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_username compute
-openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_password novatest
-#WORKAROUND
-#openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_username admin
-#openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_password keystonetest
+#openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_username compute
+#openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_password novatest
+#WORKAROUND CHECK THIS ABOVE WITH SOMEBODY IN THE NOVA TEAM^
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_username admin
+openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_password keystonetest
 openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_auth_url http://vip-keystone:35357/v2.0
 
 openstack-config --set /etc/neutron/neutron.conf DEFAULT notify_nova_on_port_status_changes  True
