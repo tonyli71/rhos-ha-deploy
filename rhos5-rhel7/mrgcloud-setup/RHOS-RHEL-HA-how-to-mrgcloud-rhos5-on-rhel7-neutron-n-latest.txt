@@ -36,6 +36,8 @@ openstack-config --set /etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini s
 
 openstack-config --set  /etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini DEFAULT host rhos5-neutron-n
 
+# ovs l2 population
+openstack-config --set /etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini agent l2_population True
 
 # metadata agent
 

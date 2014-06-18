@@ -47,7 +47,7 @@ ln -s /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugin.ini
 
 openstack-config --set /etc/neutron/plugin.ini ml2 type_drivers local,gre,flat,vxlan,vlan
 openstack-config --set /etc/neutron/plugin.ini ml2 tenant_network_types vxlan
-openstack-config --set /etc/neutron/plugin.ini ml2 mechanism_drivers openvswitch
+openstack-config --set /etc/neutron/plugin.ini ml2 mechanism_drivers openvswitch,l2population
 openstack-config --set /etc/neutron/plugin.ini ml2_type_flat flat_networks *
 openstack-config --set /etc/neutron/plugin.ini ml2_type_gre tunnel_id_ranges 10:10000
 openstack-config --set /etc/neutron/plugin.ini ml2_type_vxlan vni_ranges 10:10000
