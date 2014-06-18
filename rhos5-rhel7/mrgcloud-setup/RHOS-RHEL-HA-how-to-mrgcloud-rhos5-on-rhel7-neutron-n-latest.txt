@@ -1,6 +1,6 @@
 rhos5-neutron-n1|rhos5-neutron-n2|rhos5-neutron-n3:
 
-yum install -y openstack-neutron openstack-neutron-openvswitch openstack-neutron-ml2 openstack-utils openvswitch
+yum install -y openstack-neutron openstack-neutron-openvswitch openstack-utils openvswitch
 
 systemctl enable openvswitch
 systemctl start openvswitch
@@ -21,37 +21,6 @@ openstack-config --set /etc/neutron/neutron.conf database max_retries -1
 openstack-config --set /etc/neutron/neutron.conf DEFAULT rabbit_host vip-rabbitmq
 
 openstack-config --set /etc/neutron/neutron.conf DEFAULT notification_driver neutron.openstack.common.notifier.rpc_notifier
-
-# do we need this at all? - not sure if actually needed on the network nodes (START)---------
-openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_url http://vip-nova:8774
-openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_region_name regionOne
-openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_username compute
-openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_tenant_id 72632ec3e65f49bc96754dddc0fd0d83
-openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_password novatest
-openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_auth_url "http://vip-nova:8774/v2/\$(tenant_id)s"
-
-openstack-config --set /etc/neutron/neutron.conf DEFAULT notify_nova_on_port_status_changes  True
-openstack-config --set /etc/neutron/neutron.conf DEFAULT notify_nova_on_port_data_changes  True
-
-openstack-config --set /etc/neutron/neutron.conf DEFAULT core_plugin  neutron.plugins.ml2.plugin.Ml2Plugin
-
-rm -rf /etc/neutron/plugin.ini  #remove this later
-ln -s /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugin.ini
-
-
-openstack-config --set /etc/neutron/plugin.ini ml2 type_drivers local,gre,flat,vxlan,vlan
-openstack-config --set /etc/neutron/plugin.ini ml2 tenant_network_types vxlan
-openstack-config --set /etc/neutron/plugin.ini ml2 mechanism_drivers openvswitch
-openstack-config --set /etc/neutron/plugin.ini ml2_type_flat flat_networks *
-openstack-config --set /etc/neutron/plugin.ini ml2_type_gre tunnel_id_ranges 10:10000
-openstack-config --set /etc/neutron/plugin.ini ml2_type_vxlan vni_ranges 10:10000
-openstack-config --set /etc/neutron/plugin.ini ml2_type_vxlan vxlan_group 224.0.0.1
-openstack-config --set /etc/neutron/plugin.ini securitygroup enable_security_group True
-# THIS ONE IS WRONG BUT JUST COPYING MY PACKSTACK DEPL ATM
-openstack-config --set /etc/neutron/plugin.ini securitygroup firewall_driver True
-# openstack-config --set /etc/neutron/plugin.ini securitygroup firewall_driver neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver  
-
-#-------------------------- probably not needed for the network nodes (END) --
 
 # openvswitch plugin (used as mechanism within ml2)
 
