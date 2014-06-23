@@ -5,6 +5,9 @@ yum install -y mongodb mongodb-server
 sed -i -e 's#bind_ip.*#bind_ip = 0.0.0.0#g'  /etc/mongodb.conf
 echo "replSet = ceilometer" >> /etc/mongodb.conf 
 
+systemctl start mongod
+systemctl stop mongod
+
 systemctl enable pcsd
 systemctl start pcsd
 
@@ -22,10 +25,10 @@ pcs stonith create mongodb1-fence fence_xvm multicast_address=225.0.0.7 pcmk_hos
 pcs stonith create mongodb2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-mongodb2
 pcs stonith create mongodb3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-mongodb3
 
-pcs resource create mongodb systemd:mongod op start timeout=120s op monitor start-delay=30s --clone
+pcs resource create mongodb systemd:mongod op start timeout=10s op monitor start-delay=10s --clone
 
 # Setup replica (need to wait for mongodb to settle down first!)
-sleep 120
+sleep 20
 
 rm -f /root/mongo_replica_setup.js
 cat > /root/mongo_replica_setup.js << EOF

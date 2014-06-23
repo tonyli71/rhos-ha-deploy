@@ -28,11 +28,11 @@ backend db-vms
 
 frontend vip-rabbitmq
     bind 192.168.16.213:5672
-    timeout client 90s
+    timeout client 90m
     default_backend rabbitmq-vms
 backend rabbitmq-vms
     balance roundrobin
-    timeout server 90s
+    timeout server 90m
     server rhos5-rabbitmq1 192.168.16.61:5672 check inter 1s
     server rhos5-rabbitmq2 192.168.16.62:5672 check inter 1s
     server rhos5-rabbitmq3 192.168.16.63:5672 check inter 1s

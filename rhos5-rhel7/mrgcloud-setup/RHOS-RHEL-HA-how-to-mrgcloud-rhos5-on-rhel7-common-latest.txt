@@ -10,7 +10,7 @@ systemctl enable pcsd
 systemctl start pcsd
 
 # set a password for hacluster user. password should be the same on all nodes
-passwd hacluster
+echo cluster | passwd --stdin hacluster
 
 # I SET THE PASSWORD TO: cluster
 # use a safer one

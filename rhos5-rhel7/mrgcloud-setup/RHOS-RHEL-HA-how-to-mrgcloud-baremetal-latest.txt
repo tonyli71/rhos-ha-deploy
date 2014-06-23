@@ -52,6 +52,12 @@ name=rhel7-ha
 baseurl=http://download.eng.rdu2.redhat.com/rel-eng/latest-RHEL-7/compose/Server/x86_64/os/addons/HighAvailability/
 gpgcheck=0
 enabled=1
+
+[rhel7-z]
+name=rhel7-z
+baseurl=http://download.devel.redhat.com/brewroot/repos/rhel-7.0-z-build/latest/\$basearch
+gpgcheck=0
+enabled=1
 EOF
 
 cat > /etc/yum.repos.d/osp5.repo << EOF
