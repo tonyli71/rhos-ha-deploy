@@ -48,12 +48,14 @@ http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rh
 rhos5-horizon1|rhos5-horizon2|rhos5-horizon3
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-horizon
 
-# missing heat
+rhos5-heat1|rhos5-heat2|rhos5-heat3
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-heat
 
 rhos5-mongodb1|rhos5-mongodb2|rhos5-mongodb3
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-mongodb
 
-# missing ceilometer
+rhos5-ceilometer1|rhos5-ceilometer2|rhos5-ceilometer3 (WIP)
+http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-ceilometer
 
 compute nodes (single node clusters)
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-compute

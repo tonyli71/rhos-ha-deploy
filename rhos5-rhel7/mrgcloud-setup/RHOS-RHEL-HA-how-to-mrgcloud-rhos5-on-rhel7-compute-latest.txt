@@ -115,7 +115,7 @@ sleep 30
 
 # hack!! can´t get ipmi to work from localhost to localhost!!!!
 pcs property set stonith-enabled=false
-pcs property set start-failure-is-fatal=false
+#pcs property set start-failure-is-fatal=false
 
 pcs resource create neutron-openvswitch-agent systemd:neutron-openvswitch-agent op monitor start-delay=10s --group computenode
 pcs resource create libvirtd systemd:libvirtd op monitor start-delay=10s --group computenode

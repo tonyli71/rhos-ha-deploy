@@ -1,0 +1,131 @@
+rhos5-heat1|rhos5-heat2|rhos5-heat3:
+
+yum install -y openstack-heat-* python-heatclient openstack-utils python-glanceclient
+
+openstack-config --set /etc/heat/heat.conf database connection mysql://heat:heattest@vip-mysql/heat
+openstack-config --set /etc/heat/heat.conf database database max_retries -1
+
+openstack-config --set /etc/heat/heat.conf keystone_authtoken admin_tenant_name services
+openstack-config --set /etc/heat/heat.conf keystone_authtoken admin_user heat
+openstack-config --set /etc/heat/heat.conf keystone_authtoken admin_password heattest
+openstack-config --set /etc/heat/heat.conf keystone_authtoken service_host vip-keystone
+openstack-config --set /etc/heat/heat.conf keystone_authtoken auth_host vip-keystone
+openstack-config --set /etc/heat/heat.conf keystone_authtoken auth_uri http://vip-keystone:35357/v2.0
+openstack-config --set /etc/heat/heat.conf keystone_authtoken keystone_ec2_uri http://vip-keystone:35357/v2.0
+openstack-config --set /etc/heat/heat.conf ec2authtoken auth_uri http://vip-keystone:5000/v2.0
+
+openstack-config  --set /etc/heat/heat.conf DEFAULT memcache_servers  rhos5-memcache1:11211,rhos5-memcache2:11211,rhos5-memcache3:11211
+
+openstack-config --set /etc/heat/heat.conf DEFAULT heat_metadata_server_url vip-heat:8000
+openstack-config --set /etc/heat/heat.conf DEFAULT heat_waitcondition_server_url vip-heat:8000/v1/waitcondition
+openstack-config --set /etc/heat/heat.conf DEFAULT heat_watch_server_url vip-heat:8003
+
+openstack-config --set /etc/heat/heat.conf DEFAULT rpc_backend heat.openstack.common.rpc.impl_kombu
+openstack-config --set /etc/heat/heat.conf DEFAULT rabbit_host vip-rabbitmq
+
+#notification_driver= ? for ceilometer???
+
+rhos5-heat1:
+
+su heat -s /bin/sh -c "heat-manage db_sync"
+
+rhos5-heat1|rhos5-heat2|rhos5-heat3:
+
+systemctl enable pcsd
+systemctl start pcsd
+
+pcs cluster auth rhos5-heat1 rhos5-heat2 rhos5-heat3 -u hacluster -p cluster --force
+
+rhos5-heat1:
+
+pcs cluster setup --name rhos5-heat rhos5-heat1 rhos5-heat2 rhos5-heat3
+pcs cluster enable --all
+pcs cluster start --all
+
+sleep 30
+
+pcs stonith create heat1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos5-heat1
+pcs stonith create heat2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-heat2
+pcs stonith create heat3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-heat3
+
+pcs resource create heat-api systemd:openstack-heat-api op monitor start-delay=10s --clone
+pcs resource create heat-api-cfn systemd:openstack-heat-api-cfn op monitor start-delay=10s --clone
+pcs resource create heat-api-cloudwatch systemd:openstack-heat-api-cloudwatch op monitor start-delay=10s --clone
+
+# heat-engine can do A/A but requires OS::Ceilometer::Alarm in templates
+# that means:
+# 1) ceilometer must be working before heat
+# 2) if somebody overrides a template can it go kaboom?
+# 3) let´s start basic with A/P, we can easily tune it later on.
+
+pcs resource create heat-engine systemd:openstack-heat-engine op monitor start-delay=10s
+
+pcs constraint order start heat-api-clone then heat-api-cfn-clone
+pcs constraint colocation add heat-api-cfn with heat-api
+pcs constraint order start heat-api-cfn-clone then heat-api-cloudwatch-clone
+pcs constraint colocation add heat-api-cloudwatch with heat-api-cfn
+pcs constraint order start heat-api-cloudwatch-clone then heat-engine-clone
+pcs constraint colocation add heat-engine with heat-api-cloudwatch
+
+# TEST:
+
+. /srv/rhos5/configs/keystonerc_admin
+
+nova keypair-add --pub_key ~/.ssh/authorized_keys heat-userkey-test
+
+cat > /root/ha_test.yaml << EOF
+heat_template_version: 2013-05-23
+
+description: >
+  HA test.
+
+parameters:
+  key_name:
+    type: string
+    description: Name of keypair to assign to servers
+  image:
+    type: string
+    description: Name of image to use for servers
+  flavor:
+    type: string
+    description: Flavor to use for servers
+  private_net_id:
+    type: string
+    description: ID of private network into which servers get deployed
+  private_subnet_id:
+    type: string
+    description: ID of private sub network into which servers get deployed
+
+resources:
+  server1:
+    type: OS::Nova::Server
+    properties:
+      name: Server1
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key_name }
+      networks:
+        - port: { get_resource: server1_port }
+
+  server1_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_param: private_net_id }
+      fixed_ips:
+        - subnet_id: { get_param: private_subnet_id }
+
+outputs:
+  server1_private_ip:
+    description: IP address of server1 in private network
+    value: { get_attr: [ server1, first_address ] }
+EOF
+
+privatenetid=$(neutron net-list |grep internal_lan | awk '{print $2}')
+privatesubnetid=$(neutron subnet-list |grep internal_subnet|awk '{print $2}')
+
+heat   stack-create testtest --template-file=/root/ha_test.yaml --parameters="key_name=heat-userkey-test;image=cirros;flavor=m1.large;private_net_id=$privatenetid;private_subnet_id=$privatesubnetid"
+
+heat stack-list
+
+heat stack-delete testtest
+

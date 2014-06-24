@@ -36,6 +36,9 @@ openstack-config --set /etc/nova/nova.conf DEFAULT libvirt_vif_driver nova.virt.
 
 openstack-config --set /etc/nova/nova.conf conductor use_local false
 
+# REQUIRED FOR A/A scheduler
+openstack-config --set /etc/nova/nova.conf DEFAULT scheduler_host_subset_size 30
+
 openstack-config --set /etc/nova/api-paste.ini filter:authtoken auth_host vip-keystone
 openstack-config --set /etc/nova/api-paste.ini filter:authtoken admin_tenant_name services
 openstack-config --set /etc/nova/api-paste.ini filter:authtoken admin_user compute
@@ -67,18 +70,17 @@ pcs stonith create nova3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_l
 pcs resource create nova-consoleauth systemd:openstack-nova-consoleauth  op monitor start-delay=10s --clone
 pcs resource create nova-novncproxy systemd:openstack-nova-novncproxy op monitor start-delay=10s --clone
 pcs resource create nova-api systemd:openstack-nova-api op monitor start-delay=10s --clone
-
-# A/P for now
-pcs resource create nova-scheduler systemd:openstack-nova-scheduler op monitor start-delay=10s
+pcs resource create nova-scheduler systemd:openstack-nova-scheduler op monitor start-delay=10s --clone
 pcs resource create nova-conductor systemd:openstack-nova-conductor op monitor start-delay=10s --clone
 
 pcs constraint order start nova-consoleauth-clone then nova-novncproxy-clone
 pcs constraint colocation add nova-novncproxy with nova-consoleauth
 pcs constraint order start nova-novncproxy-clone then nova-api-clone
 pcs constraint colocation add nova-api with nova-novncproxy
-pcs constraint order start nova-api-clone then nova-scheduler
+pcs constraint order start nova-api-clone then nova-scheduler-clone
 pcs constraint colocation add nova-scheduler with nova-api
 pcs constraint order start nova-scheduler then nova-conductor-clone
+pcs constraint colocation add nova-conductor with nova-scheduler
 
 # TEST
 . /srv/rhos5/configs/keystonerc_admin

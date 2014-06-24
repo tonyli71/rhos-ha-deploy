@@ -64,6 +64,8 @@ CREATE DATABASE ovs_neutron;
 GRANT ALL ON ovs_neutron.* TO 'neutron'@'%' IDENTIFIED BY 'neutrontest';
 CREATE DATABASE nova;
 GRANT ALL ON nova.* TO 'nova'@'%' IDENTIFIED BY 'novatest';
+CREATE DATABASE heat;
+GRANT ALL ON heat.* TO 'heat'@'%' IDENTIFIED BY 'heattest';
 FLUSH PRIVILEGES;
 quit
 
