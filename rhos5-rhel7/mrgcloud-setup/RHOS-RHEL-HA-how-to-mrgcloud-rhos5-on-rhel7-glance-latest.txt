@@ -19,9 +19,6 @@ openstack-config --set /etc/glance/glance-api.conf keystone_authtoken admin_pass
 openstack-config --set /etc/glance/glance-api.conf DEFAULT notification_driver messaging
 openstack-config --set /etc/glance/glance-api.conf DEFAULT rabbit_host vip-rabbitmq
 
-#rabbit_durable_queues=False ?
-# default_publisher_id = image.localhost ?
-
 openstack-config --set /etc/glance/glance-api.conf DEFAULT registry_host vip-glance
 
 openstack-config --set /etc/glance/glance-registry.conf database connection mysql://glance:glancetest@vip-mysql/glance

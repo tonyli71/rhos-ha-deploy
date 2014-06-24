@@ -54,7 +54,7 @@ http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rh
 rhos5-mongodb1|rhos5-mongodb2|rhos5-mongodb3
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-mongodb
 
-rhos5-ceilometer1|rhos5-ceilometer2|rhos5-ceilometer3 (WIP)
+rhos5-ceilometer1|rhos5-ceilometer2|rhos5-ceilometer3
 http://rhel-ha.etherpad.corp.redhat.com/RHOS-RHEL-HA-how-to-mrgcloud-rhos5-on-rhel7-ceilometer
 
 compute nodes (single node clusters)

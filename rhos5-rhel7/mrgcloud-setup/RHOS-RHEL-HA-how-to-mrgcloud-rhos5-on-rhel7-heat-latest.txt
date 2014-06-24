@@ -23,7 +23,7 @@ openstack-config --set /etc/heat/heat.conf DEFAULT heat_watch_server_url vip-hea
 openstack-config --set /etc/heat/heat.conf DEFAULT rpc_backend heat.openstack.common.rpc.impl_kombu
 openstack-config --set /etc/heat/heat.conf DEFAULT rabbit_host vip-rabbitmq
 
-#notification_driver= ? for ceilometer???
+openstack-config --set /etc/heat/heat.conf DEFAULT notification_driver heat.openstack.common.notifier.rpc_notifier
 
 rhos5-heat1:
 

@@ -77,13 +77,14 @@ openstack-config --set /etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini s
 openstack-config --set /etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini agent l2_population True
 
 
-
-# ceilometer TBD!!!
+# ceilometer
 openstack-config --set /etc/nova/nova.conf DEFAULT instance_usage_audit True
 openstack-config --set /etc/nova/nova.conf DEFAULT instance_usage_audit_period hour
 openstack-config --set /etc/nova/nova.conf DEFAULT notify_on_state_change vm_and_task_state
 openstack-config --set /etc/nova/nova.conf DEFAULT notification_driver nova.openstack.common.notifier.rpc_notifier
-openstack-config --set /etc/nova/nova.conf DEFAULT notification_driver ceilometer.compute.nova_notifier
+sed -i -e 's#nova.openstack.common.notifier.rpc_notifier#nova.openstack.common.notifier.rpc_notifier\nnotification_driver = ceilometer.compute.nova_notifier#g' /etc/nova/nova.conf
+
+# copy those settings pristine from ceilometer how-to
 
 openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken auth_host vip-keystone
 openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken auth_port 35357
@@ -91,15 +92,23 @@ openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken auth_p
 openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken admin_tenant_name services
 openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken admin_user ceilometer
 openstack-config --set /etc/ceilometer/ceilometer.conf keystone_authtoken admin_password ceilometertest
-openstack-config   --set /etc/ceilometer/ceilometer.conf keystone_authtoken   memcached_servers rhos4-memcache1:11211,rhos4-memcache2:11211
-openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT qpid_hostname vip-qpid
+
+openstack-config   --set /etc/ceilometer/ceilometer.conf DEFAULT memcache_servers  rhos5-memcache1:11211,rhos5-memcache2:11211,rhos5-memcache3:11211
+
+openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT rabbit_host vip-rabbitmq
+
 openstack-config --set /etc/ceilometer/ceilometer.conf publisher_rpc metering_secret ceilometersecret
-openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT os_auth_url http://vip-keystone:35357/v2.0
-openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT os_username ceilometer
-openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT os_tenant_name services
-openstack-config --set /etc/ceilometer/ceilometer.conf DEFAULT os_password ceilometertest
-openstack-config   --set  /etc/ceilometer/ceilometer.conf database connection    mongodb://rhos4-mongodb1,rhos4-mongodb2,rhos4-mongodb3,rhos4-mongodb4:27017/ceilometer?replicaSet=ceilometer
-openstack-config --set /etc/neutron/neutron.conf DEFAULT notification_driver neutron.openstack.common.notifier.rpc_notifier
+
+openstack-config --set /etc/ceilometer/ceilometer.conf service_credentials os_auth_url http://vip-keystone:5000/v2.0
+openstack-config --set /etc/ceilometer/ceilometer.conf service_credentials os_username ceilometer
+openstack-config --set /etc/ceilometer/ceilometer.conf service_credentials os_tenant_name services
+openstack-config --set /etc/ceilometer/ceilometer.conf service_credentials os_password ceilometertest
+
+openstack-config  --set /etc/ceilometer/ceilometer.conf database connection    mongodb://rhos5-mongodb1,rhos5-mongodb2,rhos5-mongodb3:27017/ceilometer?replicaSet=ceilometer
+openstack-config --set /etc/ceilometer/ceilometer.conf database connection max_retries -1
+# keep last 5 days data only (value is in secs)
+openstack-config --set  /etc/ceilometer/ceilometer.conf database time_to_live 432000
+
 
 systemctl enable pcsd
 systemctl start pcsd
@@ -115,12 +124,10 @@ sleep 30
 
 # hack!! can´t get ipmi to work from localhost to localhost!!!!
 pcs property set stonith-enabled=false
-#pcs property set start-failure-is-fatal=false
 
 pcs resource create neutron-openvswitch-agent systemd:neutron-openvswitch-agent op monitor start-delay=10s --group computenode
 pcs resource create libvirtd systemd:libvirtd op monitor start-delay=10s --group computenode
-# ceilometer on hold!
-# pcs resource create ceilometer-compute systemd:openstack-ceilometer-compute op monitor start-delay=10s --group computenode
+pcs resource create ceilometer-compute systemd:openstack-ceilometer-compute op monitor start-delay=10s --group computenode
 pcs resource create nova-compute systemd:openstack-nova-compute op monitor start-delay=10s --group computenode
 
 

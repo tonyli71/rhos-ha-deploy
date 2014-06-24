@@ -21,7 +21,7 @@ openstack-config --set /etc/ceilometer/ceilometer.conf service_credentials os_te
 openstack-config --set /etc/ceilometer/ceilometer.conf service_credentials os_password ceilometertest
 
 openstack-config --set /etc/ceilometer/ceilometer.conf database connection   mongodb://rhos5-mongodb1,rhos5-mongodb2,rhos5-mongodb3:27017/ceilometer?replicaSet=ceilometer
-openstack-config --set /etc/ceilometer/ceilometer.conf database connection max_retries -1
+openstack-config --set /etc/ceilometer/ceilometer.conf database max_retries -1
 # keep last 5 days data only (value is in secs)
 openstack-config --set  /etc/ceilometer/ceilometer.conf database time_to_live 432000
 
@@ -42,22 +42,22 @@ pcs stonith create ceilometer1-fence fence_xvm multicast_address=225.0.0.7 pcmk_
 pcs stonith create ceilometer2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-ceilometer2
 pcs stonith create ceilometer3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-ceilometer3
 
-XXXXX
-
-pcs resource create ceilometer-central lsb:openstack-ceilometer-central 
-pcs resource create ceilometer-collector lsb:openstack-ceilometer-collector --clone
-pcs resource create ceilometer-api lsb:openstack-ceilometer-api --clone
+pcs resource create ceilometer-central systemd:openstack-ceilometer-central op monitor start-delay=10s
+pcs resource create ceilometer-collector systemd:openstack-ceilometer-collector op monitor start-delay=10s --clone
+pcs resource create ceilometer-api systemd:openstack-ceilometer-api op monitor start-delay=10s --clone
 pcs resource create ceilometer-delay Delay startdelay=10 --clone
-pcs resource create ceilometer-alarm-evaluator lsb:openstack-ceilometer-alarm-evaluator --clone
-pcs resource create ceilometer-alarm-notifier lsb:openstack-ceilometer-alarm-notifier --clone
+pcs resource create ceilometer-alarm-evaluator systemd:openstack-ceilometer-alarm-evaluator op monitor start-delay=10s --clone
+pcs resource create ceilometer-alarm-notifier systemd:openstack-ceilometer-alarm-notifier op monitor start-delay=10s --clone
+pcs resource create ceilometer-notification systemd:openstack-ceilometer-notification op monitor start-delay=10s --clone
 
 pcs constraint order start ceilometer-central then ceilometer-collector-clone
 pcs constraint order start ceilometer-collector-clone then ceilometer-api-clone
 pcs constraint order start ceilometer-api-clone then ceilometer-delay-clone
 pcs constraint order start ceilometer-delay-clone then ceilometer-alarm-evaluator-clone
 pcs constraint order start ceilometer-alarm-evaluator-clone then ceilometer-alarm-notifier-clone
+pcs constraint order start ceilometer-alarm-notifier-clone then ceilometer-notification-clone
 
 # TEST
-. /srv/rhos/configs/keystonerc_admin
+. /srv/rhos5/configs/keystonerc_admin
 for m in storage.objects image network volume instance ; do ceilometer sample-list -m $m | tail -2 ; done
 
