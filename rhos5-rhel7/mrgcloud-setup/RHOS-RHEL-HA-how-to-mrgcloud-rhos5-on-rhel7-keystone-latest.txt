@@ -131,6 +131,14 @@ keystone endpoint-create --service heat --publicurl "http://vip-heat:8004/v1/%(t
 keystone service-create --name heat-cfn --type cloudformation
 keystone endpoint-create --service heat-cfn --publicurl "http://vip-heat:8000/v1" --adminurl "http://vip-heat:8000/v1" --internalurl "http://vip-heat:8000/v1"
 
+# ceilometer
+keystone user-create --name ceilometer --pass ceilometertest --email fdinitto@redhat.com
+keystone user-role-add --user ceilometer --role admin --tenant services
+keystone role-create --name ResellerAdmin
+keystone user-role-add --user ceilometer --role ResellerAdmin --tenant services
+keystone service-create --name ceilometer --type metering --description="OpenStack Telemetry Service"
+keystone endpoint-create --service ceilometer --publicurl "http://vip-ceilometer:8777" --adminurl "http://vip-ceilometer:8777" --internalurl "http://vip-ceilometer:8777"
+
 # others
 
 # TEST

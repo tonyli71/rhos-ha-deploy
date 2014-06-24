@@ -338,8 +338,8 @@ $TTL    86400
 98      IN      PTR     rhos5-mongodb2.vmnet.mpc.lab.eng.bos.redhat.com.
 99      IN      PTR     rhos5-mongodb3.vmnet.mpc.lab.eng.bos.redhat.com.
 100     IN      PTR     rhos5-ceilometer1.vmnet.mpc.lab.eng.bos.redhat.com.
-101     IN      PTR     rhos5-ceilometer1.vmnet.mpc.lab.eng.bos.redhat.com.
-102     IN      PTR     rhos5-ceilometer1.vmnet.mpc.lab.eng.bos.redhat.com.
+101     IN      PTR     rhos5-ceilometer2.vmnet.mpc.lab.eng.bos.redhat.com.
+102     IN      PTR     rhos5-ceilometer3.vmnet.mpc.lab.eng.bos.redhat.com.
 
 200     IN      PTR     vip-mysql.vmnet.mpc.lab.eng.bos.redhat.com.
 201     IN      PTR     vip-qpid.vmnet.mpc.lab.eng.bos.redhat.com.
