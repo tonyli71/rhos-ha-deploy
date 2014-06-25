@@ -187,9 +187,9 @@ global
 defaults
     mode tcp
     maxconn 10000
-    timeout connect 90s
-    timeout client 90s
-    timeout server 90s
+    timeout connect 180s
+    timeout client 180s
+    timeout server 180s
 frontend vip-horizon-ext
     bind 10.16.144.34:80
     default_backend vip-horizon-int

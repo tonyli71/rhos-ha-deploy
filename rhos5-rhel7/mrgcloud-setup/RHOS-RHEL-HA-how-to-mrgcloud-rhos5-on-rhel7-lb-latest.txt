@@ -28,11 +28,11 @@ backend db-vms
 
 frontend vip-rabbitmq
     bind 192.168.16.213:5672
-    timeout client 90m
+    timeout client 900m
     default_backend rabbitmq-vms
 backend rabbitmq-vms
     balance roundrobin
-    timeout server 90m
+    timeout server 900m
     server rhos5-rabbitmq1 192.168.16.61:5672 check inter 1s
     server rhos5-rabbitmq2 192.168.16.62:5672 check inter 1s
     server rhos5-rabbitmq3 192.168.16.63:5672 check inter 1s
@@ -91,8 +91,6 @@ backend swift-vms
     server rhos5-swift2 192.168.16.80:8080 check inter 1s
     server rhos5-swift3 192.168.16.80:8080 check inter 1s
 
-# EVERYTHING BELOW THIS LINE STILL NEEDS TESTING! Blindly ported from OSP4.
-
 frontend vip-neutron
     bind 192.168.16.206:9696
     default_backend neutron-vms
@@ -140,9 +138,11 @@ backend nova-api-vms
 
 frontend vip-horizon
     bind 192.168.16.208:80
+    timeout client 180s
     default_backend horizon-vms
 backend horizon-vms
     balance roundrobin
+    timeout server 180s
     server rhos5-horizon1 192.168.16.91:80 check inter 1s
     server rhos5-horizon2 192.168.16.92:80 check inter 1s
     server rhos5-horizon3 192.168.16.93:80 check inter 1s
