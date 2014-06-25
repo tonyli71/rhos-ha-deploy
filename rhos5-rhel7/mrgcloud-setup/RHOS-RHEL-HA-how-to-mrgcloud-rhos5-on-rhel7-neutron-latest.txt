@@ -24,9 +24,6 @@ openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_tenant_id $(
 
 openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_username compute
 openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_password novatest
-#WORKAROUND CHECK THIS ABOVE WITH SOMEBODY IN THE NOVA TEAM^
-#openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_username admin
-#openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_password keystonetest
 
 openstack-config --set /etc/neutron/neutron.conf DEFAULT nova_admin_auth_url http://vip-keystone:35357/v2.0
 
@@ -86,7 +83,7 @@ pcs stonith create neutron1-fence fence_xvm multicast_address=225.0.0.7 pcmk_hos
 pcs stonith create neutron2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-neutron2
 pcs stonith create neutron3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-neutron3
 
-pcs resource create neutron-server systemd:neutron-server op monitor start-delay=10s
+pcs resource create neutron-server systemd:neutron-server op monitor start-delay=10s --clone
 
 # TEST/create your first network
 
