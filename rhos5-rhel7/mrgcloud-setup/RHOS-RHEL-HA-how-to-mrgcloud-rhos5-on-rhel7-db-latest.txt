@@ -1,6 +1,6 @@
-# WARNING #
-# I am temporary using mariadb/mysql because i did not have time to sync
-# with Ryan for Galera.
+# 2 how-tos:
+# part 1: mariadb A/P with nfs
+# part 2: galera A/A (needs haproxy.cfg changes for the backend entry!)
 
 rhos5-db1|rhos5-db2|rhos5-db3:
 
@@ -43,31 +43,7 @@ EOF
 
 pcs resource create maria-db mysql config=/var/lib/mysql/my.cnf enable_creation=1 op start timeout=120s --group db-group
 
-mysql mysql
-drop user ''@'rhos5-db1.vmnet.mpc.lab.eng.bos.redhat.com';
-drop user 'root'@'rhos5-db1.vmnet.mpc.lab.eng.bos.redhat.com';
-GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED by 'mysqltest' WITH GRANT OPTION;
-flush privileges;
-quit
-mysqladmin flush-hosts
-
-# create all various users:
-
-mysql --user=root --password=mysqltest --host=vip-mysql
-CREATE DATABASE keystone;
-GRANT ALL ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'keystonetest';
-CREATE DATABASE glance;
-GRANT ALL ON glance.* TO 'glance'@'%' IDENTIFIED BY 'glancetest';
-CREATE DATABASE cinder;
-GRANT ALL ON cinder.* TO 'cinder'@'%' IDENTIFIED BY 'cindertest';
-CREATE DATABASE ovs_neutron;
-GRANT ALL ON ovs_neutron.* TO 'neutron'@'%' IDENTIFIED BY 'neutrontest';
-CREATE DATABASE nova;
-GRANT ALL ON nova.* TO 'nova'@'%' IDENTIFIED BY 'novatest';
-CREATE DATABASE heat;
-GRANT ALL ON heat.* TO 'heat'@'%' IDENTIFIED BY 'heattest';
-FLUSH PRIVILEGES;
-quit
+# populate the db (see below)
 
 # OUTPUT
 
@@ -103,36 +79,46 @@ Daemon Status:
   pacemaker: active/enabled
   pcsd: active/enabled
 
-=================================================================
+======================== GALERA (WIP) ====================
 
-GALERA NOTES
+== transition ==
 
-LB:
+stop haproxy so no more incoming db change
 
-listen galera
-  bind 10.15.85.32:3306
-  mode  tcp
-  option  tcplog
-  option  httpchk
-  stick  on dst
-  stick-table  type ip size 2
-  server mesa-virt-11 10.15.85.151:3306  check port 9200
-  server mesa-virt-12 10.15.85.152:3306  check port 9200
-  server mesa-virt-13 10.15.85.153:3306  check port 9200
+mysqldump --opt --events --all-databases > /srv/rhos5/configs/openstack.sql
 
-galera my.cnf (node 11):
+pcs cluster stop --all
 
+== ^^^^ this is only useful for me ^^^^ ==
+
+rhos5-db1|rhos5-db2|rhos5-db3:
+
+yum install -y mariadb-galera-server
+
+cat > /etc/sysconfig/clustercheck << EOF
+MYSQL_USERNAME="clustercheck"
+MYSQL_PASSWORD="supersecretpasswd"
+MYSQL_HOST="localhost"
+MYSQL_PORT="3306"
+EOF
+
+# bootstrap mode
+# NOTE: I am skipping wsrep ssl encryption to save my soul, but it _must_ be enabled
+
+rhos5-db1:
+
+cat > /etc/my.cnf.d/galera.cnf << EOF
 [mysqld]
+skip-name-resolve=1
 binlog_format=ROW
 default-storage-engine=innodb
 innodb_autoinc_lock_mode=2
 innodb_locks_unsafe_for_binlog=1
 query_cache_size=0
 query_cache_type=0
-bind-address=10.15.85.151
+bind-address=$(ip addr show dev eth1 scope global | grep inet | sed -e 's#.*inet ##g' -e 's#/.*##g')
 
 wsrep_provider=/usr/lib64/galera/libgalera_smm.so
-wsrep_provider_options="socket.ssl=true; socket.ssl_cert=/etc/pki/galera/galera.crt; socket.ssl_key=/etc/pki/galera/galera.key"
 wsrep_cluster_name="galera_cluster"
 wsrep_cluster_address="gcomm://"
 wsrep_slave_threads=1
@@ -147,23 +133,31 @@ wsrep_drupal_282555_workaround=0
 wsrep_causal_reads=0
 wsrep_notify_cmd=
 wsrep_sst_method=rsync
-wsrep_sst_auth=sst_user:77dded6d5d8f81ddda879c2c6d8782a0
+EOF
 
-galera my.cnf (node 12/13):
+systemctl start mariadb
+mysql < /srv/rhos5/configs/openstack.sql 
+mysql
+SELECT user,host FROM mysql.user;
+FLUSH PRIVILEGES;
+quit
 
+rhos5-db2|rhos5-db3:
+
+cat > /etc/my.cnf.d/galera.cnf << EOF
 [mysqld]
+skip-name-resolve=1
 binlog_format=ROW
 default-storage-engine=innodb
 innodb_autoinc_lock_mode=2
 innodb_locks_unsafe_for_binlog=1
 query_cache_size=0
 query_cache_type=0
-bind-address=10.15.85.152
+bind-address=$(ip addr show dev eth1 scope global | grep inet | sed -e 's#.*inet ##g' -e 's#/.*##g')
 
 wsrep_provider=/usr/lib64/galera/libgalera_smm.so
-wsrep_provider_options="socket.ssl=true; socket.ssl_cert=/etc/pki/galera/galera.crt; socket.ssl_key=/etc/pki/galera/galera.key"
 wsrep_cluster_name="galera_cluster"
-wsrep_cluster_address="gcomm://10.15.85.151,10.15.85.152,10.15.85.153"
+wsrep_cluster_address="gcomm://rhos5-db1,rhos5-db2,rhos5-db3"
 wsrep_slave_threads=1
 wsrep_certify_nonPK=1
 wsrep_max_ws_rows=131072
@@ -176,15 +170,100 @@ wsrep_drupal_282555_workaround=0
 wsrep_causal_reads=0
 wsrep_notify_cmd=
 wsrep_sst_method=rsync
-wsrep_sst_auth=sst_user:77dded6d5d8f81ddda879c2c6d8782a0
+EOF
+
+# start it on one node at a time?
+systemctl start mariadb
+
+rhos5-db1|rhos5-db2|rhos5-db3:
+
+# verify sync is done
+mysql
+SHOW STATUS LIKE 'wsrep%';
+quit
+
+systemctl stop mariadb
+
+systemctl enable pcsd
+systemctl start pcsd
+
+pcs cluster auth rhos5-db1 rhos5-db2 rhos5-db3 -u hacluster -p cluster --force
+
+rhos5-db1:
+
+pcs cluster setup --name rhos5-db rhos5-db1 rhos5-db2 rhos5-db3
+pcs cluster enable --all
+pcs cluster start --all
+
+sleep 30
+
+pcs stonith create db1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos5-db1
+pcs stonith create db2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-db2
+pcs stonith create db3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-db3
+
+pcs resource create galera systemd:mariadb op monitor start-delay=10s op start timeout=120s clone interleave=true ordered=true
+
+mysql -e "CREATE USER 'clustercheck'@'localhost' IDENTIFIED BY 'supersecretpasswd';"
+
+# test
+rhos5-db1|rhos5-db2|rhos5-db3:
+
+clustercheck
+
+# populate the db (see below)
+
+# OUTPUT
+
+[root@rhos5-db2 ~]# pcs status
+Cluster name: rhos5-db
+Last updated: Thu Jun 26 12:27:27 2014
+Last change: Thu Jun 26 12:20:33 2014 via cibadmin on rhos5-db1
+Stack: corosync
+Current DC: rhos5-db1 (1) - partition with quorum
+Version: 1.1.10-31.el7_0-368c726
+3 Nodes configured
+6 Resources configured
 
 
-/etc/sysconfig/clustercheck
-# This file is being maintained by Puppet.
-# DO NOT EDIT
+Online: [ rhos5-db1 rhos5-db2 rhos5-db3 ]
 
-MYSQL_USERNAME="monitor_user"
-MYSQL_PASSWORD="3cf84f7b51ce5329fe219bc8d2e8ca42"
-MYSQL_HOST="localhost"
-MYSQL_PORT="3306"
+Full list of resources:
+
+ db1-fence      (stonith:fence_xvm):    Started rhos5-db1 
+ db2-fence      (stonith:fence_xvm):    Started rhos5-db2 
+ db3-fence      (stonith:fence_xvm):    Started rhos5-db3 
+ Clone Set: galera-clone [galera]
+     Started: [ rhos5-db1 rhos5-db2 rhos5-db3 ]
+
+PCSD Status:
+  rhos5-db1: Online
+  rhos5-db2: Online
+  rhos5-db3: Online
+
+Daemon Status:
+  corosync: active/enabled
+  pacemaker: active/enabled
+  pcsd: active/enabled
+
+
+# common
+mysql mysql
+drop user ''@'rhos5-db1.vmnet.mpc.lab.eng.bos.redhat.com';
+drop user 'root'@'rhos5-db1.vmnet.mpc.lab.eng.bos.redhat.com';
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED by 'mysqltest' WITH GRANT OPTION;
+CREATE DATABASE keystone;
+GRANT ALL ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'keystonetest';
+CREATE DATABASE glance;
+GRANT ALL ON glance.* TO 'glance'@'%' IDENTIFIED BY 'glancetest';
+CREATE DATABASE cinder;
+GRANT ALL ON cinder.* TO 'cinder'@'%' IDENTIFIED BY 'cindertest';
+CREATE DATABASE ovs_neutron;
+GRANT ALL ON ovs_neutron.* TO 'neutron'@'%' IDENTIFIED BY 'neutrontest';
+CREATE DATABASE nova;
+GRANT ALL ON nova.* TO 'nova'@'%' IDENTIFIED BY 'novatest';
+CREATE DATABASE heat;
+GRANT ALL ON heat.* TO 'heat'@'%' IDENTIFIED BY 'heattest';
+FLUSH PRIVILEGES;
+quit
+mysqladmin flush-hosts
 

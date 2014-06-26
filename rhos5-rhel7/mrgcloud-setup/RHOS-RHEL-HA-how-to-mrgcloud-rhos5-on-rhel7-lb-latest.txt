@@ -18,8 +18,26 @@ defaults
 frontend vip-db
     bind 192.168.16.200:3306
     timeout client 90s
-    default_backend db-vms
-backend db-vms
+    default_backend db-vms-galera-noxinetd
+
+backend db-vms-galera-noxinetd
+    stick-table type ip size 2
+    stick on dst
+    timeout server 90s
+    server rhos5-db1 192.168.16.58:3306 check inter 1s 
+    server rhos5-db2 192.168.16.59:3306 check inter 1s 
+    server rhos5-db3 192.168.16.60:3306 check inter 1s 
+
+backend db-vms-galera
+    option httpchk
+    stick-table type ip size 2
+    stick on dst
+    timeout server 90s
+    server rhos5-db1 192.168.16.58:3306 check inter 1s port 9200
+    server rhos5-db2 192.168.16.59:3306 check inter 1s port 9200
+    server rhos5-db3 192.168.16.60:3306 check inter 1s port 9200
+
+backend db-vms-mariadb
     balance roundrobin
     timeout server 90s
     server rhos5-db1 192.168.16.58:3306 check inter 1s
@@ -185,6 +203,20 @@ backend ceilometer-vms
     server rhos5-ceilometer2 192.168.16.101:8777 check inter 1s
     server rhos5-ceilometer3 192.168.16.102:8777 check inter 1s
 
+frontend vip-qpid
+    bind 192.168.16.201:5672
+    timeout client 120s
+    default_backend qpid-vms
+
+backend qpid-vms
+# comment stick-table out
+# and add balance roundrobin for A/A cluster mode in qpid
+    stick-table type ip size 2
+    stick on dst
+    timeout server 120s
+    server rhos5-qpid1 192.168.16.103:5672 check inter 1s
+    server rhos5-qpid2 192.168.16.104:5672 check inter 1s
+    server rhos5-qpid3 192.168.16.105:5672 check inter 1s
 EOF
 
 systemctl enable pcsd
@@ -217,6 +249,7 @@ pcs resource create vip-nova IPaddr2 ip=192.168.16.207
 pcs resource create vip-horizon IPaddr2 ip=192.168.16.208
 pcs resource create vip-heat IPaddr2 ip=192.168.16.209
 pcs resource create vip-ceilometer IPaddr2 ip=192.168.16.211
+pcs resource create vip-qpid IPaddr2 ip=192.168.16.201
 
 # OUTPUT
 

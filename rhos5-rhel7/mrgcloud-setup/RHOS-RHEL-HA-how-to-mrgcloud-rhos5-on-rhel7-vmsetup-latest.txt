@@ -5,7 +5,7 @@ virsh define /srv/rhos5-rhel7-vms/rhos5-lb1.xml
 virsh start rhos5-lb1
 qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-db1.cow
 virsh define /srv/rhos5-rhel7-vms/rhos5-db1.xml
-virsh start rhos5-db1
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-db1.cow
 qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-rabbitmq1.cow
 virsh define /srv/rhos5-rhel7-vms/rhos5-rabbitmq1.xml
 virsh start rhos5-rabbitmq1
@@ -49,6 +49,9 @@ virsh start rhos5-mongodb1
 qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-ceilometer1.cow
 virsh define /srv/rhos5-rhel7-vms/rhos5-ceilometer1.xml
 virsh start rhos5-ceilometer1
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-qpid1.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-qpid1.xml
+virsh start rhos5-qpid1
 
 mrg08:
 
@@ -101,6 +104,9 @@ virsh start rhos5-mongodb2
 qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-ceilometer2.cow
 virsh define /srv/rhos5-rhel7-vms/rhos5-ceilometer2.xml
 virsh start rhos5-ceilometer2
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-qpid2.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-qpid2.xml
+virsh start rhos5-qpid2
 
 mrg09:
 
@@ -153,4 +159,7 @@ virsh start rhos5-mongodb3
 qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-ceilometer3.cow
 virsh define /srv/rhos5-rhel7-vms/rhos5-ceilometer3.xml
 virsh start rhos5-ceilometer3
+qemu-img create -b /localvms/rhos5-rhel7-base.img -f qcow2 /localvms/rhos5-qpid3.cow
+virsh define /srv/rhos5-rhel7-vms/rhos5-qpid3.xml
+virsh start rhos5-qpid3
 

@@ -63,7 +63,7 @@ EOF
 cat > /etc/yum.repos.d/osp5.repo << EOF
 [OpenStack-5.0-RHEL-7-Puddle]
 name=OpenStack-5.0-RHEL-7-Puddle
-baseurl=http://download.lab.bos.redhat.com/rel-eng/OpenStack/5.0-RHEL-7/latest/\$basearch/os
+baseurl=http://download.lab.bos.redhat.com/rel-eng/OpenStack/5.0-RHEL-7/latest/RH7-RHOS-5.0/\$basearch/os
 gpgcheck=0
 enabled=1
 EOF
@@ -340,6 +340,9 @@ $TTL    86400
 100     IN      PTR     rhos5-ceilometer1.vmnet.mpc.lab.eng.bos.redhat.com.
 101     IN      PTR     rhos5-ceilometer2.vmnet.mpc.lab.eng.bos.redhat.com.
 102     IN      PTR     rhos5-ceilometer3.vmnet.mpc.lab.eng.bos.redhat.com.
+103     IN      PTR     rhos5-qpid1.vmnet.mpc.lab.eng.bos.redhat.com.
+104     IN      PTR     rhos5-qpid2.vmnet.mpc.lab.eng.bos.redhat.com.
+105     IN      PTR     rhos5-qpid3.vmnet.mpc.lab.eng.bos.redhat.com.
 
 200     IN      PTR     vip-mysql.vmnet.mpc.lab.eng.bos.redhat.com.
 201     IN      PTR     vip-qpid.vmnet.mpc.lab.eng.bos.redhat.com.
@@ -493,6 +496,9 @@ rhos5-mongodb3          IN      A       192.168.16.99
 rhos5-ceilometer1       IN      A       192.168.16.100
 rhos5-ceilometer2       IN      A       192.168.16.101
 rhos5-ceilometer3       IN      A       192.168.16.102
+rhos5-qpid1             IN      A       192.168.16.103
+rhos5-qpid2             IN      A       192.168.16.104
+rhos5-qpid3             IN      A       192.168.16.105 
 
 vip-mysql       IN      A       192.168.16.200
 vip-qpid        IN      A       192.168.16.201
@@ -927,6 +933,18 @@ host rhos5-ceilometer2 {
 host rhos5-ceilometer3 {
   hardware ethernet 54:52:00:09:01:25;
   fixed-address rhos5-ceilometer3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-qpid1 {
+  hardware ethernet 54:52:00:07:01:27;
+  fixed-address rhos5-qpid1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-qpid2 {
+  hardware ethernet 54:52:00:08:01:27;
+  fixed-address rhos5-qpid2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-qpid3 {
+  hardware ethernet 54:52:00:09:01:27;
+  fixed-address rhos5-qpid3.vmnet.mpc.lab.eng.bos.redhat.com;
 }
 
 EOF

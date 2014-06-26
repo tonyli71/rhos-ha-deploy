@@ -1,0 +1,89 @@
+rhos5-qpid1|rhos5-qpid2|rhos5-qpid3:
+
+cat > /etc/yum.repos.d/mrg.repo << EOF
+[MRG25]
+name=MRG25
+baseurl=http://download.lab.bos.redhat.com/rel-eng/repos/mrg-2.5-rhel-7-candidate/x86_64/
+gpgcheck=0
+enabled=1
+EOF
+
+yum install -y qpid-tools qpid-cpp-server
+
+cat > /etc/qpidd.conf << EOF
+port=5672
+max-connections=65534
+worker-threads=17
+connection-backlog=65534
+auth=no
+realm=QPID
+cluster-mechanism=DIGEST-MD5 ANONYMOUS
+EOF
+
+systemctl enable pcsd
+systemctl start pcsd
+
+pcs cluster auth rhos5-qpid1 rhos5-qpid2 rhos5-qpid3 -u hacluster -p cluster --force
+
+rhos5-qpid1:
+
+pcs cluster setup --name rhos5-qpid rhos5-qpid1 rhos5-qpid2 rhos5-qpid3
+pcs cluster enable --all
+pcs cluster start --all
+
+sleep 30
+
+pcs stonith create qpid1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos5-qpid1
+pcs stonith create qpid2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-qpid2
+pcs stonith create qpid3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-qpid3
+
+pcs resource create qpidd systemd:qpidd op monitor start-delay=10s --clone
+
+# test
+yum install -y qpid-cpp-client-devel
+
+qpid-perftest -b rhos5-qpid1
+qpid-perftest -b vip-qpid
+
+qpid-python-test -b rhos5-qpid1
+..
+Totals: 309 tests, 309 passed, 0 skipped, 0 ignored, 0 failed
+
+qpid-python-test -b vip-qpid
+..
+Totals: 309 tests, 309 passed, 0 skipped, 0 ignored, 0 failed
+
+
+
+# OUTPUT
+[root@rhos5-qpid2 ~]# pcs status
+Cluster name: rhos5-qpid
+Last updated: Thu Jun 26 15:29:23 2014
+Last change: Thu Jun 26 15:23:08 2014 via cibadmin on rhos5-qpid1
+Stack: corosync
+Current DC: rhos5-qpid2 (2) - partition with quorum
+Version: 1.1.10-31.el7_0-368c726
+3 Nodes configured
+6 Resources configured
+
+
+Online: [ rhos5-qpid1 rhos5-qpid2 rhos5-qpid3 ]
+
+Full list of resources:
+
+ qpid1-fence    (stonith:fence_xvm):    Started rhos5-qpid1 
+ qpid2-fence    (stonith:fence_xvm):    Started rhos5-qpid2 
+ qpid3-fence    (stonith:fence_xvm):    Started rhos5-qpid3 
+ Clone Set: qpidd-clone [qpidd]
+     Started: [ rhos5-qpid1 rhos5-qpid2 rhos5-qpid3 ]
+
+PCSD Status:
+  rhos5-qpid1: Online
+  rhos5-qpid2: Online
+  rhos5-qpid3: Online
+
+Daemon Status:
+  corosync: active/enabled
+  pacemaker: active/enabled
+  pcsd: active/enabled
+
