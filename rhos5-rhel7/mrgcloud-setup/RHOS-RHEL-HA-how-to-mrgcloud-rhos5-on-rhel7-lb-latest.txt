@@ -157,13 +157,14 @@ backend nova-api-vms
 frontend vip-horizon
     bind 192.168.16.208:80
     timeout client 180s
+    cookie SERVERID insert indirect nocache
     default_backend horizon-vms
 backend horizon-vms
     balance roundrobin
     timeout server 180s
-    server rhos5-horizon1 192.168.16.91:80 check inter 1s
-    server rhos5-horizon2 192.168.16.92:80 check inter 1s
-    server rhos5-horizon3 192.168.16.93:80 check inter 1s
+    server rhos5-horizon1 192.168.16.91:80 check inter 1s cookie rhos5-horizon1
+    server rhos5-horizon2 192.168.16.92:80 check inter 1s cookie rhos5-horizon2
+    server rhos5-horizon3 192.168.16.93:80 check inter 1s cookie rhos5-horizon3
 
 frontend vip-heat-cfn
     bind 192.168.16.209:8000
