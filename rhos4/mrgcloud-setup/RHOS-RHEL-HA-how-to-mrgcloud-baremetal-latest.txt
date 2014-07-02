@@ -1,4 +1,4 @@
-mrg-01|07|08|09
+mrg-01|02|03|04|07|08|09
 
 public visible ip addresses:
 mrg-vip76.mpc.lab.eng.bos.redhat.com
@@ -9,6 +9,8 @@ mrg-vip80.mpc.lab.eng.bos.redhat.com
 mrg-vip81.mpc.lab.eng.bos.redhat.com
 mrg-vip82.mpc.lab.eng.bos.redhat.com
 mrg-vip83.mpc.lab.eng.bos.redhat.com
+
+if [ ! -d /usr/lib/systemd ]; then
 
 cat > /etc/yum.repos.d/custom.repo << EOF
 [rhel6.5]
@@ -36,13 +38,45 @@ enabled=1
 gpgcheck=0
 EOF
 
+else
+
+cat > /etc/yum.repos.d/rhel7.repo << EOF
+[rhel7]
+name=rhel7
+baseurl=http://download.eng.rdu2.redhat.com/rel-eng/latest-RHEL-7/compose/Server/x86_64/os/
+gpgcheck=0
+enabled=1
+
+[rhel7-ha]
+name=rhel7-ha
+baseurl=http://download.eng.rdu2.redhat.com/rel-eng/latest-RHEL-7/compose/Server/x86_64/os/addons/HighAvailability/
+gpgcheck=0
+enabled=1
+
+[rhel7-z]
+name=rhel7-z
+baseurl=http://download.devel.redhat.com/brewroot/repos/rhel-7.0-z-build/latest/\$basearch
+gpgcheck=0
+enabled=1
+EOF
+
+cat > /etc/yum.repos.d/osp5.repo << EOF
+[OpenStack-5.0-RHEL-7-Puddle]
+name=OpenStack-5.0-RHEL-7-Puddle
+baseurl=http://download.lab.bos.redhat.com/rel-eng/OpenStack/5.0-RHEL-7/latest/RH7-RHOS-5.0/\$basearch/os
+gpgcheck=0
+enabled=1
+EOF
+
+fi
+
 yum clean all
 yum update -y
 
 yum install -y pacemaker fence-agents resource-agents pcs cman ccs libvirt qemu-kvm
 sed -i -e 's/=enforcing/=disabled/g' /etc/sysconfig/selinux
 sed -i -e 's/=enforcing/=disabled/g' /etc/selinux/config
-sed -i -e 's/^0/#0/g' /etc/cron.d/rhn-virtualization.cron
+[ -f /etc/cron.d/rhn-virtualization.cron ] && sed -i -e 's/^0/#0/g' /etc/cron.d/rhn-virtualization.cron
 chkconfig acpid off
 chkconfig iptables off
 chkconfig ip6tables off
@@ -54,15 +88,20 @@ lastoct="$(hostname -s | sed -e 's#mrg-0##g')"
 
 cat > /etc/sysconfig/network-scripts/ifcfg-ext0 << EOF
 DEVICE=ext0
+NAME=ext0
 TYPE=Bridge
 BOOTPROTO=dhcp
 ONBOOT=yes
 IPV6INIT=yes
 IPV6_AUTOCONF=yes
+PEERDNS=no
+DNS1=10.16.144.34
+DOMAIN=vmnet.mpc.lab.eng.bos.redhat.com mpc.lab.eng.bos.redhat.com
 EOF
 
 cat > /etc/sysconfig/network-scripts/ifcfg-vmnet0 << EOF
 DEVICE=vmnet0
+NAME=vmnet0
 TYPE=Bridge
 BOOTPROTO=static
 ONBOOT=yes
@@ -80,6 +119,7 @@ DEVICE=eth0
 BOOTPROTO=none
 ONBOOT=yes
 BRIDGE=ext0
+NAME=eth0
 EOF
 
 cat > /etc/sysconfig/network-scripts/ifcfg-eth1 << EOF
@@ -87,12 +127,14 @@ DEVICE=eth1
 BOOTPROTO=none
 ONBOOT=yes
 BRIDGE=vmnet0
+NAME=eth1
 EOF
 
 else
 
 cat > /etc/sysconfig/network-scripts/ifcfg-em1 << EOF
 DEVICE=em1
+NAME=em1
 BOOTPROTO=none
 ONBOOT=yes
 BRIDGE=ext0
@@ -100,6 +142,7 @@ EOF
 
 cat > /etc/sysconfig/network-scripts/ifcfg-em2 << EOF
 DEVICE=em2
+NAME=em2
 BOOTPROTO=none
 ONBOOT=yes
 BRIDGE=vmnet0
@@ -111,16 +154,17 @@ echo "echo 1 > /sys/class/net/ext0/bridge/multicast_querier" >> /etc/rc.local
 echo "echo 1 > /sys/class/net/vmnet0/bridge/multicast_querier" >> /etc/rc.local
 /etc/rc.local
 
-service libvirtd start
-virsh net-destroy default
-
 umount /home
 sed -i -e 's#.*home.*##g' /etc/fstab 
 lvremove -f /dev/mapper/*home
 lvresize -f -l+100%FREE /dev/mapper/*root
-resize2fs /dev/mapper/*root
+resize2fs /dev/mapper/*root || xfs_growfs /dev/mapper/*-root
 
-sed -i -e 's#ip_forward.*#ip_forward = 1#g' /etc/sysctl.conf
+if grep -q ip_forward /etc/sysctl.conf; then
+    sed -i -e 's#ip_forward.*#ip_forward = 1#g' /etc/sysctl.conf
+else
+   echo "ip_forward = 1" >> /etc/sysctl.conf
+fi
 
 reboot
 
@@ -143,9 +187,9 @@ global
 defaults
     mode tcp
     maxconn 10000
-    timeout connect 90s
-    timeout client 90s
-    timeout server 90s
+    timeout connect 180s
+    timeout client 180s
+    timeout server 180s
 frontend vip-horizon-ext
     bind 10.16.144.34:80
     default_backend vip-horizon-int
@@ -185,7 +229,7 @@ EOF
 cat > /etc/named/192.168.16.arpa << EOF
 $TTL    86400
 @       IN      SOA     mrg-01. fdinitto.redhat.com.  (
-                                      2014040202 ; Serial
+                                      2014060601 ; Serial
                                       21600      ; Refresh
                                       10800      ; Retry
                                       1209600    ; Expire
@@ -263,6 +307,42 @@ $TTL    86400
 67      IN      PTR     rhos5-memcache1.vmnet.mpc.lab.eng.bos.redhat.com.
 68      IN      PTR     rhos5-memcache2.vmnet.mpc.lab.eng.bos.redhat.com.
 69      IN      PTR     rhos5-memcache3.vmnet.mpc.lab.eng.bos.redhat.com.
+70      IN      PTR     rhos5-glance1.vmnet.mpc.lab.eng.bos.redhat.com.
+71      IN      PTR     rhos5-glance2.vmnet.mpc.lab.eng.bos.redhat.com.
+72      IN      PTR     rhos5-glance3.vmnet.mpc.lab.eng.bos.redhat.com.
+73      IN      PTR     rhos5-cinder1.vmnet.mpc.lab.eng.bos.redhat.com.
+74      IN      PTR     rhos5-cinder2.vmnet.mpc.lab.eng.bos.redhat.com.
+75      IN      PTR     rhos5-cinder3.vmnet.mpc.lab.eng.bos.redhat.com.
+76      IN      PTR     rhos5-swift-brick1.vmnet.mpc.lab.eng.bos.redhat.com.
+77      IN      PTR     rhos5-swift-brick2.vmnet.mpc.lab.eng.bos.redhat.com.
+78      IN      PTR     rhos5-swift-brick3.vmnet.mpc.lab.eng.bos.redhat.com.
+79      IN      PTR     rhos5-swift1.vmnet.mpc.lab.eng.bos.redhat.com.
+80      IN      PTR     rhos5-swift2.vmnet.mpc.lab.eng.bos.redhat.com.
+81      IN      PTR     rhos5-swift3.vmnet.mpc.lab.eng.bos.redhat.com.
+82      IN      PTR     rhos5-neutron1.vmnet.mpc.lab.eng.bos.redhat.com.
+83      IN      PTR     rhos5-neutron2.vmnet.mpc.lab.eng.bos.redhat.com.
+84      IN      PTR     rhos5-neutron3.vmnet.mpc.lab.eng.bos.redhat.com.
+85      IN      PTR     rhos5-neutron-n1.vmnet.mpc.lab.eng.bos.redhat.com.
+86      IN      PTR     rhos5-neutron-n2.vmnet.mpc.lab.eng.bos.redhat.com.
+87      IN      PTR     rhos5-neutron-n3.vmnet.mpc.lab.eng.bos.redhat.com.
+88      IN      PTR     rhos5-nova1.vmnet.mpc.lab.eng.bos.redhat.com.
+89      IN      PTR     rhos5-nova2.vmnet.mpc.lab.eng.bos.redhat.com.
+90      IN      PTR     rhos5-nova3.vmnet.mpc.lab.eng.bos.redhat.com.
+91      IN      PTR     rhos5-horizon1.vmnet.mpc.lab.eng.bos.redhat.com.
+92      IN      PTR     rhos5-horizon2.vmnet.mpc.lab.eng.bos.redhat.com.
+93      IN      PTR     rhos5-horizon3.vmnet.mpc.lab.eng.bos.redhat.com.
+94      IN      PTR     rhos5-heat1.vmnet.mpc.lab.eng.bos.redhat.com.
+95      IN      PTR     rhos5-heat2.vmnet.mpc.lab.eng.bos.redhat.com.
+96      IN      PTR     rhos5-heat3.vmnet.mpc.lab.eng.bos.redhat.com.
+97      IN      PTR     rhos5-mongodb1.vmnet.mpc.lab.eng.bos.redhat.com.
+98      IN      PTR     rhos5-mongodb2.vmnet.mpc.lab.eng.bos.redhat.com.
+99      IN      PTR     rhos5-mongodb3.vmnet.mpc.lab.eng.bos.redhat.com.
+100     IN      PTR     rhos5-ceilometer1.vmnet.mpc.lab.eng.bos.redhat.com.
+101     IN      PTR     rhos5-ceilometer2.vmnet.mpc.lab.eng.bos.redhat.com.
+102     IN      PTR     rhos5-ceilometer3.vmnet.mpc.lab.eng.bos.redhat.com.
+103     IN      PTR     rhos5-qpid1.vmnet.mpc.lab.eng.bos.redhat.com.
+104     IN      PTR     rhos5-qpid2.vmnet.mpc.lab.eng.bos.redhat.com.
+105     IN      PTR     rhos5-qpid3.vmnet.mpc.lab.eng.bos.redhat.com.
 
 200     IN      PTR     vip-mysql.vmnet.mpc.lab.eng.bos.redhat.com.
 201     IN      PTR     vip-qpid.vmnet.mpc.lab.eng.bos.redhat.com.
@@ -298,7 +378,7 @@ EOF
 cat > /etc/named/vmnet.mpc.lab.eng.bos.redhat.com << EOF
 $TTL    86400
 @       IN      SOA     mrg-01. fdinitto.redhat.com. (
-                                2014060201 ; serial
+                                2014060901 ; serial
                                 21600      ; refresh (24 hours)
                                 10800      ; retry (2 hours)
                                 1209600    ; expire (1000 hours)
@@ -383,6 +463,42 @@ rhos5-keystone3         IN      A       192.168.16.66
 rhos5-memcache1         IN      A       192.168.16.67
 rhos5-memcache2         IN      A       192.168.16.68
 rhos5-memcache3         IN      A       192.168.16.69
+rhos5-glance1           IN      A       192.168.16.70
+rhos5-glance2           IN      A       192.168.16.71
+rhos5-glance3           IN      A       192.168.16.72
+rhos5-cinder1           IN      A       192.168.16.73
+rhos5-cinder2           IN      A       192.168.16.74
+rhos5-cinder3           IN      A       192.168.16.75
+rhos5-swift-brick1      IN      A       192.168.16.76
+rhos5-swift-brick2      IN      A       192.168.16.77
+rhos5-swift-brick3      IN      A       192.168.16.78
+rhos5-swift1            IN      A       192.168.16.79
+rhos5-swift2            IN      A       192.168.16.80
+rhos5-swift3            IN      A       192.168.16.81
+rhos5-neutron1          IN      A       192.168.16.82
+rhos5-neutron2          IN      A       192.168.16.83
+rhos5-neutron3          IN      A       192.168.16.84
+rhos5-neutron-n1        IN      A       192.168.16.85
+rhos5-neutron-n2        IN      A       192.168.16.86
+rhos5-neutron-n3        IN      A       192.168.16.87
+rhos5-nova1             IN      A       192.168.16.88
+rhos5-nova2             IN      A       192.168.16.89
+rhos5-nova3             IN      A       192.168.16.90
+rhos5-horizon1          IN      A       192.168.16.91
+rhos5-horizon2          IN      A       192.168.16.92
+rhos5-horizon3          IN      A       192.168.16.93
+rhos5-heat1             IN      A       192.168.16.94
+rhos5-heat2             IN      A       192.168.16.95
+rhos5-heat3             IN      A       192.168.16.96
+rhos5-mongodb1          IN      A       192.168.16.97
+rhos5-mongodb2          IN      A       192.168.16.98
+rhos5-mongodb3          IN      A       192.168.16.99
+rhos5-ceilometer1       IN      A       192.168.16.100
+rhos5-ceilometer2       IN      A       192.168.16.101
+rhos5-ceilometer3       IN      A       192.168.16.102
+rhos5-qpid1             IN      A       192.168.16.103
+rhos5-qpid2             IN      A       192.168.16.104
+rhos5-qpid3             IN      A       192.168.16.105 
 
 vip-mysql       IN      A       192.168.16.200
 vip-qpid        IN      A       192.168.16.201
@@ -626,6 +742,211 @@ host rhos5-rhel7-base {
   hardware ethernet 54:52:00:00:01:02;
   fixed-address rhos5-rhel7-base.vmnet.mpc.lab.eng.bos.redhat.com;
 }
+host rhos5-lb1 {
+  hardware ethernet 54:52:00:07:01:16;
+  fixed-address rhos5-lb1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-lb2 {
+  hardware ethernet 54:52:00:08:01:16;
+  fixed-address rhos5-lb2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-lb3 {
+  hardware ethernet 54:52:00:09:01:16;
+  fixed-address rhos5-lb3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-db1 {
+  hardware ethernet 54:52:00:07:01:17;
+  fixed-address rhos5-db1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-db2 {
+  hardware ethernet 54:52:00:08:01:17;
+  fixed-address rhos5-db2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-db3 {
+  hardware ethernet 54:52:00:09:01:17;
+  fixed-address rhos5-db3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-rabbitmq1 {
+  hardware ethernet 54:52:00:07:01:18;
+  fixed-address rhos5-rabbitmq1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-rabbitmq2 {
+  hardware ethernet 54:52:00:08:01:18;
+  fixed-address rhos5-rabbitmq2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-rabbitmq3 {
+  hardware ethernet 54:52:00:09:01:18;
+  fixed-address rhos5-rabbitmq3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-keystone1 {
+  hardware ethernet 54:52:00:07:01:19;
+  fixed-address rhos5-keystone1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-keystone2 {
+  hardware ethernet 54:52:00:08:01:19;
+  fixed-address rhos5-keystone2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-keystone3 {
+  hardware ethernet 54:52:00:09:01:19;
+  fixed-address rhos5-keystone3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-memcache1 {
+  hardware ethernet 54:52:00:07:01:1a;
+  fixed-address rhos5-memcache1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-memcache2 {
+  hardware ethernet 54:52:00:08:01:1a;
+  fixed-address rhos5-memcache2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-memcache3 {
+  hardware ethernet 54:52:00:09:01:1a;
+  fixed-address rhos5-memcache3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-glance1 {
+  hardware ethernet 54:52:00:07:01:1b;
+  fixed-address rhos5-glance1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-glance2 {
+  hardware ethernet 54:52:00:08:01:1b;
+  fixed-address rhos5-glance2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-glance3 {
+  hardware ethernet 54:52:00:09:01:1b;
+  fixed-address rhos5-glance3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-cinder1 {
+  hardware ethernet 54:52:00:07:01:1c;
+  fixed-address rhos5-cinder1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-cinder2 {
+  hardware ethernet 54:52:00:08:01:1c;
+  fixed-address rhos5-cinder2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-cinder3 {
+  hardware ethernet 54:52:00:09:01:1c;
+  fixed-address rhos5-cinder3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-swift-brick1 {
+  hardware ethernet 54:52:00:07:01:1d;
+  fixed-address rhos5-swift-brick1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-swift-brick2 {
+  hardware ethernet 54:52:00:08:01:1d;
+  fixed-address rhos5-swift-brick2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-swift-brick3 {
+  hardware ethernet 54:52:00:09:01:1d;
+  fixed-address rhos5-swift-brick3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-swift1 {
+  hardware ethernet 54:52:00:07:01:1e;
+  fixed-address rhos5-swift1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-swift2 {
+  hardware ethernet 54:52:00:08:01:1e;
+  fixed-address rhos5-swift2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-swift3 {
+  hardware ethernet 54:52:00:09:01:1e;
+  fixed-address rhos5-swift3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-neutron1 {
+  hardware ethernet 54:52:00:07:01:1f;
+  fixed-address rhos5-neutron1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-neutron2 {
+  hardware ethernet 54:52:00:08:01:1f;
+  fixed-address rhos5-neutron2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-neutron3 {
+  hardware ethernet 54:52:00:09:01:1f;
+  fixed-address rhos5-neutron3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-neutron-n1 {
+  hardware ethernet 54:52:00:07:01:20;
+  fixed-address rhos5-neutron-n1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-neutron-n2 {
+  hardware ethernet 54:52:00:08:01:20;
+  fixed-address rhos5-neutron-n2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-neutron-n3 {
+  hardware ethernet 54:52:00:09:01:20;
+  fixed-address rhos5-neutron-n3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-nova1 {
+  hardware ethernet 54:52:00:07:01:21;
+  fixed-address rhos5-nova1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-nova2 {
+  hardware ethernet 54:52:00:08:01:21;
+  fixed-address rhos5-nova2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-nova3 {
+  hardware ethernet 54:52:00:09:01:21;
+  fixed-address rhos5-nova3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-horizon1 {
+  hardware ethernet 54:52:00:07:01:22;
+  fixed-address rhos5-horizon1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-horizon2 {
+  hardware ethernet 54:52:00:08:01:22;
+  fixed-address rhos5-horizon2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-horizon3 {
+  hardware ethernet 54:52:00:09:01:22;
+  fixed-address rhos5-horizon3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-heat1 {
+  hardware ethernet 54:52:00:07:01:23;
+  fixed-address rhos5-heat1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-heat2 {
+  hardware ethernet 54:52:00:08:01:23;
+  fixed-address rhos5-heat2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-heat3 {
+  hardware ethernet 54:52:00:09:01:23;
+  fixed-address rhos5-heat3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-mongodb1 {
+  hardware ethernet 54:52:00:07:01:24;
+  fixed-address rhos5-mongodb1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-mongodb2 {
+  hardware ethernet 54:52:00:08:01:24;
+  fixed-address rhos5-mongodb2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-mongodb3 {
+  hardware ethernet 54:52:00:09:01:24;
+  fixed-address rhos5-mongodb3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-ceilometer1 {
+  hardware ethernet 54:52:00:07:01:25;
+  fixed-address rhos5-ceilometer1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-ceilometer2 {
+  hardware ethernet 54:52:00:08:01:25;
+  fixed-address rhos5-ceilometer2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-ceilometer3 {
+  hardware ethernet 54:52:00:09:01:25;
+  fixed-address rhos5-ceilometer3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-qpid1 {
+  hardware ethernet 54:52:00:07:01:27;
+  fixed-address rhos5-qpid1.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-qpid2 {
+  hardware ethernet 54:52:00:08:01:27;
+  fixed-address rhos5-qpid2.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+host rhos5-qpid3 {
+  hardware ethernet 54:52:00:09:01:27;
+  fixed-address rhos5-qpid3.vmnet.mpc.lab.eng.bos.redhat.com;
+}
+
 EOF
 
 chkconfig dhcpd on
@@ -679,6 +1000,7 @@ service fence_virtd start
 
 mkdir -p /localvms
 cp /srv/vms/rhos4-base.img /localvms/
+cp /srv/rhos5-rhel7-vms/rhos5-rhel7-base.img /localvms/
 
 mrg01:
 virsh define /srv/vms/rhos4-base.xml

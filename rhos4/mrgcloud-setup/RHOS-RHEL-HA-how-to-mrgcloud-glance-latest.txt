@@ -57,7 +57,7 @@ pcs stonith create glance1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host
 
 pcs stonith create glance2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos4-glance2
 
-mkdir -p /srv/rhos/glance
+mkdir -p /srv/rhos/glance/usr/share/rhel-guest-image-6/rhel-guest-image-6-6.5-20140422.0-1.qcow2
 
 pcs  resource create glance-fs Filesystem device="mrg-01:/srv/rhos/glance"  directory="/var/lib/glance" fstype="nfs" options="v3" --clone
 

@@ -2,6 +2,7 @@ rhos4-mongodb1|rhos4-mongodb2|rhos4-mongodb3|rhos4-mongodb4 (WIP):
 
 yum install -y mongodb-server
 
+# check https://bugzilla.redhat.com/show_bug.cgi?id=1112416 for bind_ip
 sed -i -e 's#bind_ip.*#bind_ip = 0.0.0.0#g'  /etc/mongodb.conf
 echo "replSet = ceilometer" >> /etc/mongodb.conf 
 
