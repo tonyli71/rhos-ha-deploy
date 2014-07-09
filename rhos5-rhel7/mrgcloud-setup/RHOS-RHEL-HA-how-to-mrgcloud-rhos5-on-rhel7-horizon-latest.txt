@@ -20,33 +20,7 @@ rhos5-horizon1
 service httpd stop
 service httpd start
 wget http://rhos5-horizon1/dashboard -O /dev/null
-service httpd stopdb1-fence    (stonith:fence_ipmilan):    Started puma42.scl.lab.tlv.redhat.com 
- db2-fence    (stonith:fence_ipmilan):    Started puma44.scl.lab.tlv.redhat.com 
- db3-fence    (stonith:fence_ipmilan):    Started puma43.scl.lab.tlv.redhat.com 
- Clone Set: lb-haproxy-clone [lb-haproxy]
-     Started: [ puma42.scl.lab.tlv.redhat.com puma43.scl.lab.tlv.redhat.com puma44.scl.lab.tlv.redhat.com ]
- Resource Group: db-group
-     db-fs    (ocf::heartbeat:Filesystem):    Started puma44.scl.lab.tlv.redhat.com 
- vip-db    (ocf::heartbeat:IPaddr2):    Started puma42.scl.lab.tlv.redhat.com 
- vip-rabbitmq    (ocf::heartbeat:IPaddr2):    Started puma43.scl.lab.tlv.redhat.com 
- vip-keystone    (ocf::heartbeat:IPaddr2):    Started puma42.scl.lab.tlv.redhat.com 
- Clone Set: rabbitmq-server-clone [rabbitmq-server]
-     Started: [ puma42.scl.lab.tlv.redhat.com puma43.scl.lab.tlv.redhat.com puma44.scl.lab.tlv.redhat.com ]
- Clone Set: keystone-clone [keystone]
-     Started: [ puma43.scl.lab.tlv.redhat.com puma44.scl.lab.tlv.redhat.com ]
-     Stopped: [ puma42.scl.lab.tlv.redhat.com ]
- Clone Set: httpd-clone [httpd]
-     Started: [ puma43.scl.lab.tlv.redhat.com puma44.scl.lab.tlv.redhat.com ]
-     Stopped: [ puma42.scl.lab.tlv.redhat.com ]
- vip-horizon    (ocf::heartbeat:IPaddr2):    Started puma42.scl.lab.tlv.redhat.com 
- Clone Set: glance-fs-clone [glance-fs]
-     Started: [ puma42.scl.lab.tlv.redhat.com puma43.scl.lab.tlv.redhat.com puma44.scl.lab.tlv.redhat.com ]
- Clone Set: glance-registry-clone [glance-registry]
-     Started: [ puma43.scl.lab.tlv.redhat.com puma44.scl.lab.tlv.redhat.com ]
-     Stopped: [ puma42.scl.lab.tlv.redhat.com ]
- Clone Set: glance-api-clone [glance-api]
-     Started: [ puma43.scl.lab.tlv.redhat.com puma44.scl.lab.tlv.redhat.com ]
-     Stopped: [ puma42.scl.lab.tlv.redhat.com ]
+service httpd stop
 
 cp /var/lib/openstack-dashboard/.secret_key_store /srv/rhos5/configs/horizon_secret_key_store 
 
