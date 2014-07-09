@@ -95,6 +95,7 @@ Pacemaker deployment
 https://github.com/davidvossel/phd/blob/master/scenarios/galera-basic.scenario
 
 
+# HACK OF DEATH TILL WE HAVE PACKAGES
 rm -f /usr/lib/ocf/resource.d/heartbeat/galera
 wget https://raw.githubusercontent.com/davidvossel/resource-agents/galera-agent/heartbeat/galera -O /usr/lib/ocf/resource.d/heartbeat/galera
 chmod 755 /usr/lib/ocf/resource.d/heartbeat/galera
@@ -146,17 +147,6 @@ wsrep_notify_cmd=
 wsrep_sst_method=rsync
 EOF
 
-# this is useful only for migrating from mysql
-systemctl start mariadb
-mysql < /srv/rhos5/configs/openstack.sql 
-mysql
-SELECT user,host FROM mysql.user;
-FLUSH PRIVILEGES;
-quit
-systemctl stop mariadb
-
-rhos5-db1|rhos5-db2|rhos5-db3:
-
 systemctl enable pcsd
 systemctl start pcsd
 
@@ -174,9 +164,14 @@ pcs stonith create db1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_lis
 pcs stonith create db2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-db2
 pcs stonith create db3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-db3
 
-# pcs resource create galera systemd:mariadb op monitor start-delay=10s op start timeout=120s clone interleave=true ordered=true
+pcs resource create galera galera enable_creation=true wsrep_cluster_address="gcomm://rhos5-db1,rhos5-db2,rhos5-db3" meta master-max=3 -master
 
-# pcs resource create galera galera enable_creation=true wsrep_cluster_address="gcomm://rhos5-db1.vmnet.mpc.lab.eng.bos.redhat.com,rhos5-db2.vmnet.mpc.lab.eng.bos.redhat.com,rhos5-db3.vmnet.mpc.lab.eng.bos.redhat.com" --master
+# this is useful only for migrating from mysql
+mysql < /srv/rhos5/configs/openstack.sql 
+mysql
+SELECT user,host FROM mysql.user;
+FLUSH PRIVILEGES;
+quit
 
 mysql -e "CREATE USER 'clustercheck'@'localhost' IDENTIFIED BY 'supersecretpasswd';"
 
@@ -190,7 +185,7 @@ mysql
 SHOW STATUS LIKE 'wsrep%';
 quit
 
-# populate the db (see below)
+# populate the db on fresh install (see below) 
 
 # OUTPUT
 
@@ -212,8 +207,8 @@ Full list of resources:
  db1-fence      (stonith:fence_xvm):    Started rhos5-db1 
  db2-fence      (stonith:fence_xvm):    Started rhos5-db2 
  db3-fence      (stonith:fence_xvm):    Started rhos5-db3 
- Clone Set: galera-clone [galera]
-     Started: [ rhos5-db1 rhos5-db2 rhos5-db3 ]
+ Master/Slave Set: galera-master [galera]
+     Masters: [ rhos5-db1 rhos5-db2 rhos5-db3 ]
 
 PCSD Status:
   rhos5-db1: Online
