@@ -173,6 +173,7 @@ SELECT user,host FROM mysql.user;
 FLUSH PRIVILEGES;
 quit
 
+# required for clustercheck to work
 mysql -e "CREATE USER 'clustercheck'@'localhost' IDENTIFIED BY 'supersecretpasswd';"
 
 # test
