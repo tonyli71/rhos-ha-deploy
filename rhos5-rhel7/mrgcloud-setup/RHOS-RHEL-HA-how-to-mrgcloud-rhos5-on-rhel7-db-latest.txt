@@ -107,7 +107,7 @@ chmod 755 /usr/lib/ocf/lib/heartbeat/mysql-common.sh
 
 rhos5-db1|rhos5-db2|rhos5-db3:
 
-yum install -y mariadb-galera-server
+yum install -y mariadb-galera-server xinetd
 
 cat > /etc/sysconfig/clustercheck << EOF
 MYSQL_USERNAME="clustercheck"
@@ -117,8 +117,6 @@ MYSQL_PORT="3306"
 EOF
 
 # NOTE: I am skipping wsrep ssl encryption to save my soul, but it _must_ be enabled
-
-rhos5-db1|rhos5-db2|rhos5-db3:
 
 cat > /etc/my.cnf.d/galera.cnf << EOF
 [mysqld]
@@ -146,6 +144,29 @@ wsrep_causal_reads=0
 wsrep_notify_cmd=
 wsrep_sst_method=rsync
 EOF
+
+cat > /etc/xinetd.d/galera-monitor << EOF
+service galera-monitor
+{
+        port            = 9200
+        disable         = no
+        socket_type     = stream
+        protocol        = tcp
+        wait            = no
+        user            = root
+        group           = root
+        groups          = yes
+        server          = /usr/bin/clustercheck
+        type            = UNLISTED
+        per_source      = UNLIMITED
+        log_on_success = 
+        log_on_failure = HOST
+        flags           = REUSE
+}
+EOF
+
+systemctl enable xinetd
+systemctl start xinetd
 
 systemctl enable pcsd
 systemctl start pcsd

@@ -18,15 +18,7 @@ defaults
 frontend vip-db
     bind 192.168.16.200:3306
     timeout client 90s
-    default_backend db-vms-galera-noxinetd
-
-backend db-vms-galera-noxinetd
-    stick-table type ip size 2
-    stick on dst
-    timeout server 90s
-    server rhos5-db1 192.168.16.58:3306 check inter 1s 
-    server rhos5-db2 192.168.16.59:3306 check inter 1s 
-    server rhos5-db3 192.168.16.60:3306 check inter 1s 
+    default_backend db-vms-galera
 
 backend db-vms-galera
     option httpchk
