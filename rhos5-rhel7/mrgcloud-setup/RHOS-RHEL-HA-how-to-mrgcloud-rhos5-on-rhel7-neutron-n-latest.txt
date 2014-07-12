@@ -1,5 +1,7 @@
 rhos5-neutron-n1|rhos5-neutron-n2|rhos5-neutron-n3:
 
+# XXX: requires new neutron packages from Miguel!!!!
+
 yum install -y openstack-neutron openstack-neutron-openvswitch openstack-utils openvswitch
 
 systemctl enable openvswitch
@@ -94,32 +96,32 @@ pcs stonith create neutron-n1-fence fence_xvm multicast_address=225.0.0.7 pcmk_h
 pcs stonith create neutron-n2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-neutron-n2
 pcs stonith create neutron-n3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-neutron-n3
 
-# cleanup mess
-# SKIP THIS ONE FOR NOW
-pcs resource create neutron-ovs-cleanup systemd:neutron-ovs-cleanup op monitor start-delay=10s --group neutron-agents
-^^^^^ this one is going to be a problem.... systemd tells me it´s dead after the first run and pcmk will keep retrying. BAD BAD BAD
-# perhaps move as StartPre in some other agent?
 
-### pcs op remove <rsc id> <op action <op properties>
+pcs resource create neutron-ovs-cleanup ocf:neutron:OVSCleanup --group neutron-agents-pre
+pcs resource create neutron-netns-cleanup ocf:neutron:NetnsCleanup --group neutron-agents-pre
+# pcs resource create neutron-agent-watch ocf:neutron:agent-watch?? --group neutron-agents-pre
 
-pcs resource create neutron-openvswitch-agent systemd:neutron-openvswitch-agent op monitor start-delay=10s --group neutron-agents
+pcs resource clone neutron-agents-pre
 
 # A/P for now
+pcs resource create neutron-openvswitch-agent systemd:neutron-openvswitch-agent op monitor start-delay=10s --group neutron-agents
 pcs resource create neutron-dhcp-agent systemd:neutron-dhcp-agent op monitor start-delay=10s --group neutron-agents
 pcs resource create neutron-l3-agent systemd:neutron-l3-agent op monitor start-delay=10s --group neutron-agents
 pcs resource create neutron-metadata-agent systemd:neutron-metadata-agent op monitor start-delay=10s --group neutron-agents
 
-# OUTPUT
+pcs constraint order start neutron-agents-pre then neutron-agents
+pcs constraint colocation add neutron-agents with neutron-agents-pre
 
+# OUTPUT
 [root@rhos5-neutron-n1 ~]# pcs status
 Cluster name: rhos5-neutron-n
-Last updated: Wed Jun 11 14:27:54 2014
-Last change: Wed Jun 11 14:27:29 2014 via cibadmin on rhos5-neutron-n1
+Last updated: Sat Jul 12 07:40:08 2014
+Last change: Sat Jul 12 07:35:56 2014 via cibadmin on rhos5-neutron-n1
 Stack: corosync
-Current DC: rhos5-neutron-n2 (2) - partition with quorum
-Version: 1.1.10-29.el7-368c726
+Current DC: rhos5-neutron-n3 (3) - partition with quorum
+Version: 1.1.10-31.el7_0-368c726
 3 Nodes configured
-7 Resources configured
+13 Resources configured
 
 
 Online: [ rhos5-neutron-n1 rhos5-neutron-n2 rhos5-neutron-n3 ]
@@ -127,13 +129,15 @@ Online: [ rhos5-neutron-n1 rhos5-neutron-n2 rhos5-neutron-n3 ]
 Full list of resources:
 
  neutron-n1-fence       (stonith:fence_xvm):    Started rhos5-neutron-n1 
- neutron-n2-fence       (stonith:fence_xvm):    Started rhos5-neutron-n2 
- neutron-n3-fence       (stonith:fence_xvm):    Started rhos5-neutron-n3 
+ neutron-n2-fence       (stonith:fence_xvm):    Started rhos5-neutron-n3 
+ neutron-n3-fence       (stonith:fence_xvm):    Started rhos5-neutron-n2 
+ Clone Set: neutron-agents-pre-clone [neutron-agents-pre]
+     Started: [ rhos5-neutron-n1 rhos5-neutron-n2 rhos5-neutron-n3 ]
  Resource Group: neutron-agents
-     neutron-openvswitch-agent  (systemd:neutron-openvswitch-agent):    Started rhos5-neutron-n1 
-     neutron-dhcp-agent (systemd:neutron-dhcp-agent):   Started rhos5-neutron-n1 
-     neutron-l3-agent   (systemd:neutron-l3-agent):     Started rhos5-neutron-n1 
-     neutron-metadata-agent     (systemd:neutron-metadata-agent):       Started rhos5-neutron-n1 
+     neutron-openvswitch-agent  (systemd:neutron-openvswitch-agent):    Started rhos5-neutron-n3 
+     neutron-dhcp-agent (systemd:neutron-dhcp-agent):   Started rhos5-neutron-n3 
+     neutron-l3-agent   (systemd:neutron-l3-agent):     Started rhos5-neutron-n3 
+     neutron-metadata-agent     (systemd:neutron-metadata-agent):       Started rhos5-neutron-n3 
 
 PCSD Status:
   rhos5-neutron-n1: Online
@@ -144,5 +148,4 @@ Daemon Status:
   corosync: active/enabled
   pacemaker: active/enabled
   pcsd: active/enabled
-
 
