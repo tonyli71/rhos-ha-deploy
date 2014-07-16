@@ -19,6 +19,8 @@ openstack-config --set /etc/cinder/cinder.conf DEFAULT glance_host vip-glance
 
 openstack-config --set /etc/cinder/cinder.conf DEFAULT memcache_servers rhos5-memcache1:11211,rhos5-memcache2:11211,rhos5-memcache3:11211
 
+openstack-config --set /etc/cinder/cinder.conf DEFAULT host rhos5-cinder
+
 mkdir -p /srv/rhos5/cinder
 cat > /etc/cinder/nfs_exports << EOF
 mrg-01:/srv/rhos5/cinder

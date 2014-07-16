@@ -104,6 +104,7 @@ rm -f /usr/lib/ocf/lib/heartbeat/mysql-common.sh
 wget  https://raw.githubusercontent.com/davidvossel/resource-agents/galera-agent/heartbeat/mysql-common.sh -O /usr/lib/ocf/lib/heartbeat/mysql-common.sh
 chmod 755 /usr/lib/ocf/lib/heartbeat/mysql-common.sh
 
+https://brewweb.devel.redhat.com/buildinfo?buildID=369112
 
 rhos5-db1|rhos5-db2|rhos5-db3:
 
@@ -185,7 +186,7 @@ pcs stonith create db1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_lis
 pcs stonith create db2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-db2
 pcs stonith create db3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-db3
 
-pcs resource create galera galera enable_creation=true wsrep_cluster_address="gcomm://rhos5-db1,rhos5-db2,rhos5-db3" meta master-max=3 -master
+pcs resource create galera galera enable_creation=true wsrep_cluster_address="gcomm://rhos5-db1,rhos5-db2,rhos5-db3" meta master-max=3 --master
 
 # this is useful only for migrating from mysql
 mysql < /srv/rhos5/configs/openstack.sql 
