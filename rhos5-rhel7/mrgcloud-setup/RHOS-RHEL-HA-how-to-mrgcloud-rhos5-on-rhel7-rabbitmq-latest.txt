@@ -72,9 +72,9 @@ Online: [ rhos5-rabbitmq1 rhos5-rabbitmq2 rhos5-rabbitmq3 ]
 
 Full list of resources:
 
- lb1-fence      (stonith:fence_xvm):    Started rhos5-rabbitmq1 
- lb2-fence      (stonith:fence_xvm):    Started rhos5-rabbitmq2 
- lb3-fence      (stonith:fence_xvm):    Started rhos5-rabbitmq3 
+ rabbitmq1-fence      (stonith:fence_xvm):    Started rhos5-rabbitmq1 
+ rabbitmq2-fence      (stonith:fence_xvm):    Started rhos5-rabbitmq2 
+ rabbitmq3-fence      (stonith:fence_xvm):    Started rhos5-rabbitmq3 
  Clone Set: rabbitmq-server-clone [rabbitmq-server]
      Started: [ rhos5-rabbitmq1 rhos5-rabbitmq2 rhos5-rabbitmq3 ]
 
