@@ -27,7 +27,6 @@ pcs cluster start --all
 sleep 30
 
 pcmk_host_pcs stonith create rabbitmq1-fence fence_xvm multicast_address=225.0.0.7 s stonith create rabbitmq1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_list=rhos5-rabbitmq1
-pcs stonith create rabbitmq2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-rabbitmq2
 pcs stonith create rabbitmq3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-rabbitmq3
 
 # REQUIRES rabbitmq-server.noarch 0:3.1.5-6.2.el7ost  or higher!!!

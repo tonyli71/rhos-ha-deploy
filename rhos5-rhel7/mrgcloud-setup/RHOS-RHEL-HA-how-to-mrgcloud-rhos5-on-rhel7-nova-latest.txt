@@ -113,9 +113,11 @@ Full list of resources:
      Started: [ rhos5-nova1 rhos5-nova2 rhos5-nova3 ]
  Clone Set: nova-api-clone [nova-api]
      Started: [ rhos5-nova1 rhos5-nova2 rhos5-nova3 ]
- nova-scheduler (systemd:openstack-nova-scheduler):     Started rhos5-nova1 
+ Clone Set: nova-scheduler-clone [nova-scheduler]
+     Started: [ rhos5-nova1 rhos5-nova2 rhos5-nova3 ]
  Clone Set: nova-conductor-clone [nova-conductor]
      Started: [ rhos5-nova1 rhos5-nova2 rhos5-nova3 ]
+
 
 PCSD Status:
   rhos5-nova1: Online

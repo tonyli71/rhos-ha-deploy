@@ -129,3 +129,42 @@ heat stack-list
 
 heat stack-delete testtest
 
+OUTPUT
+
+[root@rhos5-heat1 ~]# pcs status
+Cluster name: rhos5-heat
+Last updated: Thu Jul 24 15:17:00 2014
+Last change: Thu Jun 26 15:37:12 2014 via crm_resource on rhos5-heat1
+Stack: corosync
+Current DC: rhos5-heat1 (1) - partition with quorum
+Version: 1.1.10-31.el7_0-368c726
+3 Nodes configured
+13 Resources configured
+
+
+Online: [ rhos5-heat1 rhos5-heat2 rhos5-heat3 ]
+
+Full list of resources:
+
+ heat1-fence    (stonith:fence_xvm):    Started rhos5-heat1 
+ heat2-fence    (stonith:fence_xvm):    Started rhos5-heat2 
+ heat3-fence    (stonith:fence_xvm):    Started rhos5-heat3 
+ Clone Set: heat-api-clone [heat-api]
+     Started: [ rhos5-heat1 rhos5-heat2 rhos5-heat3 ]
+ Clone Set: heat-api-cfn-clone [heat-api-cfn]
+     Started: [ rhos5-heat1 rhos5-heat2 rhos5-heat3 ]
+ Clone Set: heat-api-cloudwatch-clone [heat-api-cloudwatch]
+     Started: [ rhos5-heat1 rhos5-heat2 rhos5-heat3 ]
+ heat-engine    (systemd:openstack-heat-engine):        Started rhos5-heat1 
+
+PCSD Status:
+  rhos5-heat1: Online
+  rhos5-heat2: Online
+  rhos5-heat3: Online
+
+Daemon Status:
+  corosync: active/enabled
+  pacemaker: active/enabled
+  pcsd: active/enabled
+
+

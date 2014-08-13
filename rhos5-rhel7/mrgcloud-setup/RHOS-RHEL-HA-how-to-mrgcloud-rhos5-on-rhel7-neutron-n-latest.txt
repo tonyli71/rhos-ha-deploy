@@ -97,6 +97,7 @@ pcs stonith create neutron-n2-fence fence_xvm multicast_address=225.0.0.8 pcmk_h
 pcs stonith create neutron-n3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-neutron-n3
 
 
+# METHOD1
 pcs resource create neutron-ovs-cleanup ocf:neutron:OVSCleanup --group neutron-agents-pre
 pcs resource create neutron-netns-cleanup ocf:neutron:NetnsCleanup --group neutron-agents-pre
 # pcs resource create neutron-agent-watch ocf:neutron:agent-watch?? --group neutron-agents-pre
@@ -111,6 +112,22 @@ pcs resource create neutron-metadata-agent systemd:neutron-metadata-agent op mon
 
 pcs constraint order start neutron-agents-pre then neutron-agents
 pcs constraint colocation add neutron-agents with neutron-agents-pre
+
+# METHOD2
+
+pcs resource create neutron-ovs-cleanup ocf:neutron:OVSCleanup --clone
+pcs resource create neutron-netns-cleanup ocf:neutron:NetnsCleanup --clone
+
+# A/P for now
+pcs  resource create neutron-openvswitch-agent  systemd:neutron-openvswitch-agent op monitor start-delay=10s --group  neutron-agents
+pcs resource create neutron-dhcp-agent systemd:neutron-dhcp-agent op monitor start-delay=10s --group neutron-agents
+pcs resource create neutron-l3-agent systemd:neutron-l3-agent op monitor start-delay=10s --group neutron-agents
+pcs resource create neutron-metadata-agent systemd:neutron-metadata-agent op monitor start-delay=10s --group neutron-agents
+
+pcs constraint order start neutron-ovs-cleanup then neutron-netns-cleanup
+pcs constraint order start neutron-netns-cleanup then neutron-agents
+pcs constraint colocation add neutron-netns-cleanup with neutron-ovs-cleanup
+pcs constraint colocation add neutron-agents with neutron-netns-cleanup
 
 # OUTPUT
 [root@rhos5-neutron-n1 ~]# pcs status

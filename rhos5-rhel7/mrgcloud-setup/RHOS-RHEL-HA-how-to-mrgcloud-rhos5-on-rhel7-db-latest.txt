@@ -96,15 +96,11 @@ https://github.com/davidvossel/phd/blob/master/scenarios/galera-basic.scenario
 
 
 # HACK OF DEATH TILL WE HAVE PACKAGES
-rm -f /usr/lib/ocf/resource.d/heartbeat/galera
-wget https://raw.githubusercontent.com/davidvossel/resource-agents/galera-agent/heartbeat/galera -O /usr/lib/ocf/resource.d/heartbeat/galera
-chmod 755 /usr/lib/ocf/resource.d/heartbeat/galera
+https://brewweb.devel.redhat.com/buildinfo?buildID=370171
 
-rm -f /usr/lib/ocf/lib/heartbeat/mysql-common.sh
-wget  https://raw.githubusercontent.com/davidvossel/resource-agents/galera-agent/heartbeat/mysql-common.sh -O /usr/lib/ocf/lib/heartbeat/mysql-common.sh
-chmod 755 /usr/lib/ocf/lib/heartbeat/mysql-common.sh
+wget http://download.devel.redhat.com/brewroot/packages/resource-agents/3.9.5/26.el7_0.2/x86_64/resource-agents-3.9.5-26.el7_0.2.x86_64.rpm
 
-https://brewweb.devel.redhat.com/buildinfo?buildID=369112
+rpm -U resource-agents-3.9.5-26.el7_0.2.x86_64.rpm
 
 rhos5-db1|rhos5-db2|rhos5-db3:
 
@@ -186,7 +182,12 @@ pcs stonith create db1-fence fence_xvm multicast_address=225.0.0.7 pcmk_host_lis
 pcs stonith create db2-fence fence_xvm multicast_address=225.0.0.8 pcmk_host_list=rhos5-db2
 pcs stonith create db3-fence fence_xvm multicast_address=225.0.0.9 pcmk_host_list=rhos5-db3
 
-pcs resource create galera galera enable_creation=true wsrep_cluster_address="gcomm://rhos5-db1,rhos5-db2,rhos5-db3" meta master-max=3 --master
+
+# NOTE - the hostnames in the cluster address must match exactly
+# the node names represented in pacemaker. Check crm_mon -1 output.
+# Look at the node names pacemaker returns there, and make sure to
+# use those in the gcomm address.
+pcs resource create galera galera enable_creation=true wsrep_cluster_address="gcomm://rhos5-db1,rhos5-db2,rhos5-db3" meta master-max=3 ordered=true op promote timeout=300s on-fail=block --master
 
 # this is useful only for migrating from mysql
 mysql < /srv/rhos5/configs/openstack.sql 
