@@ -102,7 +102,7 @@ pcs resource create neutron-ovs-cleanup ocf:neutron:OVSCleanup --group neutron-a
 pcs resource create neutron-netns-cleanup ocf:neutron:NetnsCleanup --group neutron-agents-pre
 # pcs resource create neutron-agent-watch ocf:neutron:agent-watch?? --group neutron-agents-pre
 
-pcs resource clone neutron-agents-pre
+# pcs resource clone neutron-agents-pre
 
 # A/P for now
 pcs resource create neutron-openvswitch-agent systemd:neutron-openvswitch-agent op monitor start-delay=10s --group neutron-agents

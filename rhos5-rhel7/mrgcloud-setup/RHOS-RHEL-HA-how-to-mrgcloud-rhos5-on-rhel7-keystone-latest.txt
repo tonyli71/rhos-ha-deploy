@@ -71,7 +71,7 @@ keystone tenant-create --name admin
 keystone user-role-add --user admin --role admin --tenant admin
 
 cat > /srv/rhos5/configs/keystonerc_admin << EOF
-export OS_USERNAME=admin
+export OS_USERNAME=admin 
 export OS_TENANT_NAME=admin
 export OS_PASSWORD=keystonetest
 export OS_AUTH_URL=http://vip-keystone:35357/v2.0/

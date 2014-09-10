@@ -1,4 +1,4 @@
-rhos5-memcache1|rhos5-memcache2|rhos5-memcache3
+:xrhos5-memcache1|rhos5-memcache2|rhos5-memcache3
 
 yum install -y memcached
 
